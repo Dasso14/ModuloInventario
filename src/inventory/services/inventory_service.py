@@ -1,5 +1,6 @@
 from inventory.dao.product_dao import ProductDAO
 from inventory.dao.transaction_dao import TransactionDAO
+from inventory.models.product import Product
 
 class InventoryService:
     def __init__(self):

@@ -1,3 +1,4 @@
+import psycopg2
 from inventory.database import Database
 from inventory.utils.config import Config
 
@@ -7,7 +8,7 @@ def setup_database():
         port=Config.DB_PORT,
         user=Config.DB_USER,
         password=Config.DB_PASSWORD,
-        database="postgres"
+        database="inventory_db"
     )
     conn.autocommit = True
     cursor = conn.cursor()
