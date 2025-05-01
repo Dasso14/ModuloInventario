@@ -1,5 +1,7 @@
+import psycopg2
 from inventory.database import Database
 from inventory.utils.config import Config
+
 
 def setup_database():
     conn = psycopg2.connect(
