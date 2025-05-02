@@ -10,9 +10,12 @@ setup(
         "python-dotenv",
         "alembic"
     ],
+    python_requires=">=3.8",
+    test_suite="tests",
     entry_points={
         "console_scripts": [
             "inventory-cli=inventory.cli:main"
         ]
     }
+    
 )
