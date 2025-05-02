@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from inventory.dao.supplier_dao import SupplierDAO # type: ignore
-from inventory.exceptions import SupplierHasProductsError # type: ignore
+
+from inventory.suplier_dao import SupplierDAO
 
 def test_supplier_dao_delete_with_products(mock_db_cursor):
     mock_db_cursor.execute.side_effect = [
@@ -18,5 +18,5 @@ def test_supplier_dao_delete_with_products(mock_db_cursor):
         )
 
         mock_get.return_value = [MagicMock()]  
-        with pytest.raises(SupplierHasProductsError):
+        with pytest.raises(SupplierHasProductsError): # type: ignore
             SupplierDAO.delete(2)
