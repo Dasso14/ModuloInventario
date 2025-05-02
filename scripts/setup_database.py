@@ -13,10 +13,8 @@ def setup_database():
     conn.autocommit = True
     cursor = conn.cursor()
     
-    # Crear base de datos si no existe
     cursor.execute(f"CREATE DATABASE {Config.DB_NAME}")
     
-    # Ejecutar schema SQL
     with open("schema.sql") as f:
         cursor.execute(f.read())
     
