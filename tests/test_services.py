@@ -1,5 +1,5 @@
 from inventory.services.inventory_service import InventoryService
-from inventory.database import Database
+from inventory.utils.database import Database
 
 def test_add_product_with_mock_data():
     Database.initialize()

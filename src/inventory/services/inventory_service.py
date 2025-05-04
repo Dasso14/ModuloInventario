@@ -9,11 +9,11 @@ class InventoryService:
         self.transaction_dao = TransactionDAO()
 
     def add_product(self, product_data: dict) -> int:
-        if not self._validate_product_data(product_data):
-            raise ValueError("Datos de producto inválidos")
-
-        product = Product(**product_data)
-        return self.product_dao.create(product)
+        try:
+            product = Product(**product_data)
+            return self.product_dao.create(product)
+        except Exception as e:
+            raise RuntimeError(f"Error en servicio: {str(e)}")
 
     @staticmethod
     def _validate_product_data(product_data: dict) -> bool:
