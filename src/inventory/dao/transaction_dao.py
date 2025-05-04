@@ -1,16 +1,25 @@
+# dao/transaction_dao.py
 from inventory.database import Database
 from inventory.models.transaction import Transaction
 
+
 class TransactionDAO:
     @staticmethod
-    def get_current_stock(product_id: int, location_id: int) -> float:
+    def create(transaction: Transaction) -> int:
         with Database.get_cursor() as cursor:
             cursor.execute("""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN transaction_type = 'in' THEN quantity ELSE 0 END), 0) -
-                    COALESCE(SUM(CASE WHEN transaction_type = 'out' THEN quantity ELSE 0 END), 0)
-                FROM transactions
-                WHERE product_id = %s AND location_id = %s
-            """, (product_id, location_id))
-            result = cursor.fetchone()
-            return result[0] if result else 0.0
+                INSERT INTO inventory_transactions (
+                    product_id, location_id, quantity, transaction_type, 
+                    user_id, reference_number, notes
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING transaction_id
+            """, (
+                transaction.product_id,
+                transaction.location_id,
+                transaction.quantity,
+                transaction.transaction_type.value,  # Usar .value del Enum
+                transaction.user_id,
+                transaction.reference_number,
+                transaction.notes
+            ))
+            return cursor.fetchone()[0]
