@@ -1,0 +1,664 @@
+inventory_api/
+├── app/                                # Paquete principal de la aplicación
+│   ├── __init__.py                     # Fábrica de la aplicación y registro de blueprints
+│   ├── api/                            # Blueprints y rutas de la API
+│   │   ├── __init__.py                 # Inicialización de Blueprints
+│   │   ├── products.py                 # Endpoints para /api/products
+│   │   ├── categories.py               # Endpoints para /api/categories
+│   │   ├── suppliers.py                # Endpoints para /api/suppliers
+│   │   ├── locations.py                # Endpoints para /api/locations
+│   │   ├── transactions.py             # Endpoints para /api/transactions y /api/stock-levels
+│   │   ├── transfers.py                # Endpoints para /api/transfers
+│   │   └── reports.py                  # Endpoints para /api/reports/low-stock
+│   ├── models/                         # Modelos SQLAlchemy
+│   │   ├── __init__.py
+│   │   ├── product.py
+│   │   ├── category.py
+│   │   ├── supplier.py
+│   │   ├── location.py
+│   │   ├── inventory_transaction.py    # Nombre de modelo más descriptivo
+│   │   ├── location_transfer.py
+│   │   ├── stock_level.py              # Modelo para la vista/tabla current_stock_levels
+│   │   └── user.py                     # Asumiendo que tienes un modelo User
+│   ├── services/                       # Lógica de negocio e interacción con BD
+│   │   ├── __init__.py
+│   │   ├── product_service.py
+│   │   ├── category_service.py
+│   │   ├── supplier_service.py
+│   │   ├── location_service.py
+│   │   ├── transaction_service.py
+│   │   ├── transfer_service.py
+│   │   └── report_service.py
+│   ├── schemas/                        # (Opcional pero Recomendado) Esquemas Marshmallow para validación y serialización
+│   │   ├── __init__.py
+│   │   ├── product_schema.py
+│   │   ├── category_schema.py
+│   │   # ... etc. para otros recursos
+│   ├── utils/                          # Funciones de utilidad
+│   │   ├── __init__.py
+│   │   ├── helpers.py                  # Funciones auxiliares generales
+│   │   └── error_handlers.py           # Manejadores de errores personalizados
+│   └── db.py                           # Inicialización de la instancia de la base de datos SQLAlchemy
+├── migrations/                         # Scripts de migración de Flask-Migrate (Alembic)
+├── tests/                              # Pruebas unitarias y de integración
+│   ├── __init__.py
+│   ├── test_products.py
+│   # ... etc. para otros recursos y funcionalidades
+├── .env                                # Variables de entorno (DB_URI, SECRET_KEY) - NO SUBIR A GIT
+├── .flaskenv                           # Variables de entorno de Flask (FLASK_APP, FLASK_ENV)
+├── config.py                           # Clases de configuración (Development, Production, Testing)
+├── run.py                              # Script para ejecutar el servidor de desarrollo de Flask
+└── requirements.txt     
+
+Endpoints de Gestión de Maestros (CRUD)
+
+Para Productos, Categorías, Proveedores y Ubicaciones, la estructura CRUD es similar:
+
+
+
+Para cada Recurso: products, categories, suppliers, locations
+
+
+
+(Reemplaza [recurso] con products, categories, suppliers o locations)
+
+
+
+Obtener Lista de [Recurso]
+
+
+
+Método: GET
+
+URL: /api/[recurso]
+
+Propósito: Obtener una lista de todos los elementos del recurso.
+
+Parámetros de Consulta (Opcionales):
+
+page, limit: Para paginación.
+
+search: Para búsqueda por nombre u otros campos relevantes.
+
+sortBy, order: Para ordenación.
+
+fields: Para obtener solo campos específicos (útil para dropdowns).
+
+parent_id / parent_location: Para filtrar por jerarquía (solo para categories y locations).
+
+is_active: Para filtrar por estado (solo para products y locations).
+
+Cuerpo de Respuesta: Una lista de objetos [Recurso]. Incluir campos clave.
+
+JSON
+
+
+
+[
+
+{ "[recurso]_id": 1, "name": "Nombre del Recurso", ...otros_campos },
+
+{ "[recurso]_id": 2, "name": "Otro Nombre", ... },
+
+// ...
+
+]
+
+(Ejemplo para /api/products devolvería product_id, sku, name, unit_price, is_active, category_id, supplier_id, etc.)
+
+Crear Nuevo [Recurso]
+
+
+
+Método: POST
+
+URL: /api/[recurso]
+
+Propósito: Agregar un nuevo elemento del recurso.
+
+Cuerpo de Solicitud: Objeto con los datos del nuevo [Recurso].
+
+JSON
+
+
+
+{
+
+"name": "Nombre del Nuevo Recurso",
+
+"campo1": "valor1",
+
+"campo2": "valor2"
+
+// ... campos relevantes según la tabla del recurso (excluyendo ID autogenerado, created_at, updated_at)
+
+}
+
+(Ejemplo para /api/products esperaría sku, name, description, category_id, supplier_id, unit_cost, etc. Los IDs relacionados pueden ser null si son opcionales).
+
+Cuerpo de Respuesta (Éxito):
+
+JSON
+
+
+
+{
+
+"success": true,
+
+"[recurso]_id": 123, // El ID del elemento recién creado
+
+"message": "[Recurso] creado con éxito"
+
+}
+
+Cuerpo de Respuesta (Error):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "Error al crear [Recurso]",
+
+"errors": { // Opcional: detalles de validación fallida
+
+"campo": "Mensaje de error específico"
+
+}
+
+}
+
+Obtener [Recurso] por ID
+
+
+
+Método: GET
+
+URL: /api/[recurso]/{id}
+
+Propósito: Obtener los detalles de un elemento específico por su ID.
+
+Parámetros de URL: id (el ID del recurso).
+
+Cuerpo de Respuesta (Éxito): Un objeto con todos los detalles del [Recurso].
+
+JSON
+
+
+
+{
+
+"[recurso]_id": 123,
+
+"name": "Nombre del Recurso",
+
+"campo1": "valor1",
+
+"campo2": "valor2",
+
+"created_at": "timestamp",
+
+"updated_at": "timestamp"
+
+// ... todos los campos relevantes
+
+}
+
+Cuerpo de Respuesta (Error 404 Not Found):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "[Recurso] no encontrado"
+
+}
+
+Actualizar [Recurso] por ID
+
+
+
+Método: PUT (para reemplazo completo) o PATCH (para actualización parcial). PUT es común si el formulario de edición envía todos los campos.
+
+URL: /api/[recurso]/{id}
+
+Propósito: Actualizar un elemento existente por su ID.
+
+Parámetros de URL: id (el ID del recurso a actualizar).
+
+Cuerpo de Solicitud: Objeto con los datos actualizados del [Recurso].
+
+JSON
+
+
+
+{
+
+"name": "Nuevo Nombre del Recurso", // En PUT, enviar todos los campos
+
+"campo1": "nuevo_valor1"
+
+// ... campos a actualizar
+
+}
+
+Cuerpo de Respuesta (Éxito):
+
+JSON
+
+
+
+{
+
+"success": true,
+
+"message": "[Recurso] actualizado con éxito"
+
+}
+
+Cuerpo de Respuesta (Error):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "Error al actualizar [Recurso]",
+
+"errors": { // Opcional: detalles de validación
+
+"campo": "Mensaje de error específico"
+
+}
+
+}
+
+Eliminar [Recurso] por ID
+
+
+
+Método: DELETE
+
+URL: /api/[recurso]/{id}
+
+Propósito: Eliminar un elemento del recurso por su ID. (Considerar si es eliminación física o lógica, la base de datos tiene is_active en Products/Locations, sugiriendo eliminación lógica para algunos).
+
+Parámetros de URL: id (el ID del recurso a eliminar).
+
+Cuerpo de Respuesta (Éxito):
+
+JSON
+
+
+
+{
+
+"success": true,
+
+"message": "[Recurso] eliminado con éxito" // O "marcado como inactivo"
+
+}
+
+Cuerpo de Respuesta (Error):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "Error al eliminar [Recurso]",
+
+"error": "Motivo del error (ej: tiene elementos asociados)"
+
+}
+
+Endpoints de Inventario (Operaciones y Reportes)
+
+Registrar Transacción de Inventario (Entrada, Salida, Ajuste)
+
+
+
+Método: POST
+
+URL: /api/transactions
+
+Propósito: Registrar un movimiento de stock (entrada, salida o ajuste).
+
+Cuerpo de Solicitud:
+
+JSON
+
+
+
+{
+
+"product_id": 1, // ID del producto
+
+"location_id": 1, // ID de la ubicación
+
+"quantity": 10.5, // Cantidad (positiva para entrada/ajuste+, negativa para salida/ajuste-)
+
+"transaction_type": "entrada" | "salida" | "ajuste", // Tipo de transacción
+
+"reference_number": "string" | null, // Nro de factura/pedido, etc.
+
+"notes": "string" | null, // Motivo del ajuste, etc.
+
+"user_id": 1 // ID del usuario que realiza la operación (obtener del usuario autenticado)
+
+// transaction_date, created_at generados en backend/DB
+
+// related_transaction puede ser manejado internamente por transferencias si aplica
+
+}
+
+Cuerpo de Respuesta (Éxito):
+
+JSON
+
+
+
+{
+
+"success": true,
+
+"transaction_id": 456, // El ID de la transacción creada
+
+"message": "Transacción registrada con éxito"
+
+}
+
+Cuerpo de Respuesta (Error):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "Error al registrar transacción",
+
+"errors": { /* detalles */ }
+
+}
+
+Registrar Transferencia de Stock
+
+
+
+Método: POST
+
+URL: /api/transfers
+
+Propósito: Iniciar el proceso de transferencia de stock entre dos ubicaciones. Este endpoint debe llamar al procedimiento transfer_stock en la base de datos o replicar su lógica (crear 2 transacciones y 1 registro en location_transfers).
+
+Cuerpo de Solicitud:
+
+JSON
+
+
+
+{
+
+"product_id": 1, // ID del producto
+
+"from_location_id": 1, // ID de la ubicación de origen
+
+"to_location_id": 2, // ID de la ubicación de destino
+
+"quantity": 5.0, // Cantidad a transferir (siempre positiva)
+
+"notes": "string" | null, // Notas sobre la transferencia
+
+"user_id": 1 // ID del usuario que realiza la operación
+
+}
+
+Cuerpo de Respuesta (Éxito):
+
+JSON
+
+
+
+{
+
+"success": true,
+
+"transfer_id": 789, // El ID del registro de transferencia creado
+
+"message": "Transferencia registrada con éxito"
+
+}
+
+Cuerpo de Respuesta (Error):
+
+JSON
+
+
+
+{
+
+"success": false,
+
+"message": "Error al registrar transferencia",
+
+"error": "Motivo (ej: stock insuficiente en origen)"
+
+}
+
+Obtener Historial de Transacciones
+
+
+
+Método: GET
+
+URL: /api/transactions (reutiliza el endpoint de lista, pero con enfoque en reportes)
+
+Propósito: Obtener un historial de transacciones de inventario.
+
+Parámetros de Consulta (Opcionales):
+
+productId, locationId, type, userId: Para filtrar por estos campos.
+
+startDate, endDate: Para filtrar por rango de fecha de transacción.
+
+page, limit, sortBy, order: Para paginación y ordenación.
+
+Cuerpo de Respuesta: Una lista de objetos de transacción, incluyendo nombres de entidades relacionadas (Producto, Ubicación, Usuario).
+
+JSON
+
+
+
+[
+
+{
+
+"transaction_id": 101,
+
+"transaction_date": "ISO8601 Timestamp",
+
+"transaction_type": "entrada",
+
+"product_id": 1,
+
+"product_name": "SKU - Nombre Producto", // Unir datos
+
+"location_id": 1,
+
+"location_name": "Nombre Ubicación", // Unir datos
+
+"quantity": 20,
+
+"reference_number": "PO123",
+
+"notes": "Notas",
+
+"user_id": 1,
+
+"user_name": "Nombre Usuario" // Unir datos
+
+// created_at, related_transaction también pueden incluirse
+
+},
+
+// ...
+
+]
+
+Obtener Reporte de Niveles de Stock Actual
+
+
+
+Método: GET
+
+URL: /api/stock-levels
+
+Propósito: Obtener el nivel de stock actual para cada combinación producto/ubicación.
+
+Parámetros de Consulta (Opcionales): productId, locationId, categoryId, supplierId, etc. para filtrar.
+
+Cuerpo de Respuesta: Una lista de objetos de nivel de stock, incluyendo nombres de entidades relacionadas.
+
+JSON
+
+
+
+[
+
+{
+
+"stock_id": 1,
+
+"product_id": 1,
+
+"product_name": "SKU - Nombre Producto",
+
+"location_id": 1,
+
+"location_name": "Nombre Ubicación",
+
+"quantity": 15,
+
+"last_updated": "ISO8601 Timestamp"
+
+},
+
+// ...
+
+]
+
+Obtener Reporte de Stock Bajo
+
+
+
+Método: GET
+
+URL: /api/reports/low-stock
+
+Propósito: Obtener una lista de productos/ubicaciones donde el stock actual es menor o igual al stock mínimo definido para el producto.
+
+Parámetros de Consulta (Opcionales): Pueden ser similares a /api/stock-levels.
+
+Cuerpo de Respuesta: Una lista de objetos representando ítems con stock bajo, incluyendo detalles relevantes.
+
+JSON
+
+
+
+[
+
+{
+
+"product_id": 1,
+
+"sku": "SKU", // Directamente del producto
+
+"product_name": "Nombre Producto", // Directamente del producto
+
+"location_id": 2,
+
+"location_name": "Nombre Ubicación",
+
+"quantity": 5, // Stock actual
+
+"min_stock": 10 // Stock mínimo
+
+},
+
+// ...
+
+]
+
+Obtener Historial de Transferencias de Ubicación
+
+
+
+Método: GET
+
+URL: /api/transfers (reutiliza el endpoint de lista, con enfoque en reportes)
+
+Propósito: Obtener el historial de movimientos de stock entre ubicaciones.
+
+Parámetros de Consulta (Opcionales): productId, fromLocationId, toLocationId, userId, startDate, endDate, etc.
+
+Cuerpo de Respuesta: Una lista de objetos de transferencia, incluyendo nombres de entidades relacionadas.
+
+JSON
+
+
+
+[
+
+{
+
+"transfer_id": 1,
+
+"transfer_date": "ISO8601 Timestamp",
+
+"product_id": 2,
+
+"product_name": "SKU - Nombre Producto",
+
+"from_location_id": 1,
+
+"from_location_name": "Nombre Origen",
+
+"to_location_id": 2,
+
+"to_location_name": "Nombre Destino",
+
+"quantity": 8,
+
+"user_id": 2,
+
+"user_name": "Nombre Usuario",
+
+"notes": "Notas"
+
+// created_at también puede incluirse
+
+},
+
+// ...
+
+]
+
+Esta es mi estructura de mi proyecto de flask y mis endpoints necesarios, quiero que crees todos los .py que estan dentro de models
+
