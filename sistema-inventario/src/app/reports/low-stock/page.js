@@ -47,7 +47,7 @@ export default function LowStockReportPage() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>Reporte de Productos con Stock Bajo</h1>
-         <Link href="/" passHref legacyBehavior>
+         <Link href="/" passHref >
             <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
         </Link>
       </div>
@@ -68,22 +68,22 @@ export default function LowStockReportPage() {
                       <th>Ubicación</th>
                       <th>Cantidad Actual</th>
                       <th>Stock Mínimo</th>
-                      <th>Acciones</th> {/* Enlace a detalles del producto/stock */}
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lowStockItems.map((item, index) => (
-                      <tr key={item.stock_id || index}> {/* Usar stock_id si es único, o index como fallback */}
+                      <tr key={item.stock_id || index}> 
                         <td>{item.sku}</td>
                         <td>{item.product_name}</td>
                         <td>{item.location_name}</td>
                         <td>{item.quantity}</td>
                         <td>{item.min_stock}</td>
                          <td>
-                             <Link href={`/products/${item.product_id}`} passHref legacyBehavior>
+                             <Link href={`/products/${item.product_id}`} passHref >
                                  <button type="button" className="btn btn-info btn-sm">Ver Producto</button>
                              </Link>
-                             {/* Podrías añadir un enlace a la pantalla de agregar stock para esta ubicación/producto */}
+                           
                          </td>
                       </tr>
                     ))}

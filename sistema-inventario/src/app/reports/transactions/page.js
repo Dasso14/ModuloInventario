@@ -54,7 +54,7 @@ export default function TransactionHistoryReportPage() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>Historial de Transacciones de Inventario</h1>
-         <Link href="/" passHref legacyBehavior>
+         <Link href="/" passHref >
             <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
         </Link>
       </div>
@@ -119,7 +119,7 @@ export default function TransactionHistoryReportPage() {
                       <tr key={tx.transaction_id}>
                         <td>{new Date(tx.transaction_date).toLocaleString()}</td>
                          <td>
-                             {/* Usar badge para tipo */}
+                            
                              <span className={`badge ${tx.transaction_type === 'entrada' ? 'bg-success' : tx.transaction_type === 'salida' ? 'bg-danger' : 'bg-secondary'}`}>
                                  {tx.transaction_type}
                             </span>

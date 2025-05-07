@@ -56,7 +56,7 @@ export default function StockLevelsReportPage() {
            <div className="alert alert-info">No hay niveles de stock registrados.</div>
       ) : (
            <div className="table-responsive">
-                <table className="table table-striped table-bordered table-hover table-sm"> {/* table-sm para tabla más compacta */}
+                <table className="table table-striped table-bordered table-hover table-sm"> 
                   <thead>
                     <tr>
                       <th>Producto</th>
@@ -68,8 +68,8 @@ export default function StockLevelsReportPage() {
                   <tbody>
                     {stockLevels.map(item => (
                       <tr key={item.stock_id}>
-                        <td>{getProductName(item.product_id)}</td> {/* Usar función de ayuda */}
-                        <td>{getLocationName(item.location_id)}</td> {/* Usar función de ayuda */}
+                        <td>{getProductName(item.product_id)}</td>
+                        <td>{getLocationName(item.location_id)}</td> 
                         <td>{item.quantity}</td>
                         <td>{item.last_updated ? new Date(item.last_updated).toLocaleString() : 'N/A'}</td>
                       </tr>
