@@ -53,7 +53,7 @@ export default function CreateProductPage() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>Crear Nuevo Producto</h1>
-        <Link href="/products" passHref legacyBehavior>
+        <Link href="/products" passHref >
           <Button variant="secondary">Cancelar</Button>
         </Link>
       </div>

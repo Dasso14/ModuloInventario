@@ -1,114 +1,118 @@
 import { Inter } from "next/font/google";
-import Link from "next/link"; // Importa Link de next/link
-import { Container, Navbar, Nav, NavDropdown } from "react-bootstrap"; // Importa componentes de react-bootstrap
-
-// Importa Bootstrap CSS
-// Asegúrate de que la ruta sea correcta según tu configuración (node_modules)
+import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./globals.css"; // Archivo global de CSS si lo tienes
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Sistema de Inventario",
-  description: "Gestión de inventario con Next.js y React-Bootstrap",
+  description: "Gestión de inventario con Next.js",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body className={inter.className}>
-        {/* Barra de Navegación */}
-        <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
-          <Container>
-            <Link href="/products" passHref legacyBehavior>
-              <NavDropdown.Item>Productos</NavDropdown.Item>
+      <head>
+        {/* Asegura que el JS de Bootstrap esté cargado para habilitar dropdowns y collapses */}
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          defer
+        ></script>
+      </head>
+      <body className={`${inter.className} bg-light`}>
+        <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+          <div className="container">
+            <Link href="/" className="navbar-brand">
+              Inventario
             </Link>
-            <Navbar.Toggle aria-controls="basic-navbar-nav" />
-            <Navbar.Collapse id="basic-navbar-nav">
-              <Nav className="me-auto">
-                {/* Dropdown: Maestros */}
-                <NavDropdown title="Maestros" id="basic-nav-dropdown-maestros">
-                  <NavDropdown.Item as={Link} href="/products" passHref>
-                    Productos
-                  </NavDropdown.Item>
-                  <NavDropdown.Item as={Link} href="/categories" passHref>
-                    Categorías
-                  </NavDropdown.Item>
-                  <NavDropdown.Item as={Link} href="/suppliers" passHref>
-                    Proveedores
-                  </NavDropdown.Item>
-                  <NavDropdown.Item as={Link} href="/locations" passHref>
-                    Ubicaciones
-                  </NavDropdown.Item>
-                </NavDropdown>
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#main-navbar"
+              aria-controls="main-navbar"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
 
-                {/* Dropdown: Operaciones de Inventario */}
-                <NavDropdown
-                  title="Operaciones"
-                  id="basic-nav-dropdown-operaciones"
-                >
-                  <NavDropdown.Item as={Link} href="/inventory/add" passHref>
-                    Registrar Entrada
-                  </NavDropdown.Item>
-                  <NavDropdown.Item as={Link} href="/inventory/remove" passHref>
-                    Registrar Salida
-                  </NavDropdown.Item>
-                  <NavDropdown.Item as={Link} href="/inventory/adjust" passHref>
-                    Ajuste de Stock
-                  </NavDropdown.Item>
-                  <NavDropdown.Divider /> {/* Separador */}
-                  <NavDropdown.Item
-                    as={Link}
-                    href="/inventory/transfer"
-                    passHref
-                  >
-                    Transferir Stock
-                  </NavDropdown.Item>
-                </NavDropdown>
+            <div className="collapse navbar-collapse" id="main-navbar">
+              <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+                {/* Enlace directo para móviles */}
+                <li className="nav-item d-lg-none">
+                  <Link href="/products" className="nav-link">Productos</Link>
+                </li>
 
-                {/* Dropdown: Reportes */}
-                <NavDropdown title="Reportes" id="basic-nav-dropdown-reportes">
-                  <NavDropdown.Item
-                    as={Link}
-                    href="/reports/stock-levels"
-                    passHref
+                {/* Maestros */}
+                <li className="nav-item dropdown">
+                  <a
+                    className="nav-link dropdown-toggle"
+                    href="#"
+                    id="maestrosDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
                   >
-                    Niveles de Stock
-                  </NavDropdown.Item>
-                  <NavDropdown.Item
-                    as={Link}
-                    href="/reports/transactions"
-                    passHref
-                  >
-                    Historial de Transacciones
-                  </NavDropdown.Item>
-                  <NavDropdown.Item
-                    as={Link}
-                    href="/reports/low-stock"
-                    passHref
-                  >
-                    Stock Bajo
-                  </NavDropdown.Item>
-                  <NavDropdown.Item
-                    as={Link}
-                    href="/reports/transfers"
-                    passHref
-                  >
-                    Historial de Transferencias
-                  </NavDropdown.Item>
-                </NavDropdown>
-              </Nav>
-            </Navbar.Collapse>
-          </Container>
-        </Navbar>
+                    Maestros
+                  </a>
+                  <ul className="dropdown-menu" aria-labelledby="maestrosDropdown">
+                    <li><Link href="/products" className="dropdown-item">Productos</Link></li>
+                    <li><Link href="/categories" className="dropdown-item">Categorías</Link></li>
+                    <li><Link href="/suppliers" className="dropdown-item">Proveedores</Link></li>
+                    <li><Link href="/locations" className="dropdown-item">Ubicaciones</Link></li>
+                  </ul>
+                </li>
 
-        {/* Contenido de la página actual */}
-        <Container className="mt-4">
-          {" "}
-          {/* Agrega un margen superior para que el contenido no quede debajo de la barra */}
+                {/* Operaciones */}
+                <li className="nav-item dropdown">
+                  <a
+                    className="nav-link dropdown-toggle"
+                    href="#"
+                    id="operacionesDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    Operaciones
+                  </a>
+                  <ul className="dropdown-menu" aria-labelledby="operacionesDropdown">
+                    <li><Link href="/inventory/add" className="dropdown-item">Registrar Entrada</Link></li>
+                    <li><Link href="/inventory/remove" className="dropdown-item">Registrar Salida</Link></li>
+                    <li><Link href="/inventory/adjust" className="dropdown-item">Ajuste de Stock</Link></li>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li><Link href="/inventory/transfer" className="dropdown-item">Transferir Stock</Link></li>
+                  </ul>
+                </li>
+
+                {/* Reportes */}
+                <li className="nav-item dropdown">
+                  <a
+                    className="nav-link dropdown-toggle"
+                    href="#"
+                    id="reportesDropdown"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    Reportes
+                  </a>
+                  <ul className="dropdown-menu" aria-labelledby="reportesDropdown">
+                    <li><Link href="/reports/stock-levels" className="dropdown-item">Niveles de Stock</Link></li>
+                    <li><Link href="/reports/transactions" className="dropdown-item">Historial de Transacciones</Link></li>
+                    <li><Link href="/reports/low-stock" className="dropdown-item">Stock Bajo</Link></li>
+                    <li><Link href="/reports/transfers" className="dropdown-item">Historial de Transferencias</Link></li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+
+        <main className="container mt-4">
           {children}
-        </Container>
+        </main>
       </body>
     </html>
   );

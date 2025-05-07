@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Container, Form, Button, Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import Link from 'next/link';
-import { getProductById, exampleCategories, exampleSuppliers } from '@/lib/product-data'; // Ajusta la ruta si es necesario
+import { getProductById, exampleCategories, exampleSuppliers } from '../../../../../lib/product-data'; // Ajusta la ruta si es necesario
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -103,7 +103,7 @@ export default function EditProductPage() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>Editar Producto: {product.name}</h1>
-        <Link href={`/products/${product.product_id}`} passHref legacyBehavior>
+        <Link href={`/products/${product.product_id}`} passHref >
           <Button variant="secondary">Cancelar</Button>
         </Link>
       </div>

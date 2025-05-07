@@ -1,17 +1,25 @@
-// lib/product-data.js
+// lib/data-mocks.js
 
-// Datos de categorías de ejemplo (solo para referencia visual)
-const exampleCategories = [
+// Datos de categorías de ejemplo
+export const exampleCategories = [
     { category_id: 1, name: 'Electrónica' },
     { category_id: 2, name: 'Computadoras' },
     { category_id: 3, name: 'Accesorios' },
 ];
 
-// Datos de proveedores de ejemplo (solo para referencia visual)
-const exampleSuppliers = [
+// Datos de proveedores de ejemplo
+export const exampleSuppliers = [
     { supplier_id: 101, name: 'Tech Global' },
     { supplier_id: 102, name: 'Office Supplies Co.' },
 ];
+
+// Datos de ubicaciones de ejemplo
+export const exampleLocations = [
+    { location_id: 1, name: 'Almacén Principal', address: 'Calle Falsa 123' },
+    { location_id: 2, name: 'Tienda 1', address: 'Av. Siempreviva 742' },
+    { location_id: 3, name: 'Bodega Trasera', address: 'Calle Desconocida 456' },
+];
+
 
 // Datos de productos de ejemplo
 export const exampleProducts = [
@@ -107,11 +115,25 @@ export const exampleStockLevels = [
     { stock_id: 6, product_id: 4, location_id: 1, quantity: 8 },  // Monitor 27 en Ubicación 1
 ];
 
+
 // Funciones de utilidad para simular la "API"
 export const getProducts = () => exampleProducts;
 export const getProductById = (id) => exampleProducts.find(p => p.product_id === id);
 export const getStockLevelsByProductId = (productId) => exampleStockLevels.filter(sl => sl.product_id === productId);
+export const getLocations = () => exampleLocations;
+export const getCategories = () => exampleCategories;
+export const getSuppliers = () => exampleSuppliers;
 
-// Nota: Las funciones para crear/editar/eliminar no se implementan aquí, solo la lectura.
-// En un sistema real, harías llamadas a una API (rutas de API de Next.js o un backend separado)
-// para interactuar con la base de datos.
+// Funciones auxiliares para obtener nombres (simulación de JOIN)
+export const getCategoryName = (categoryId) => {
+    const category = exampleCategories.find(cat => cat.category_id === categoryId);
+    return category ? category.name : 'Desconocida';
+};
+export const getSupplierName = (supplierId) => {
+    const supplier = exampleSuppliers.find(sup => sup.supplier_id === supplierId);
+    return supplier ? supplier.name : 'Desconocido';
+};
+export const getLocationName = (locationId) => {
+    const location = exampleLocations.find(loc => loc.location_id === locationId);
+    return location ? location.name : 'Desconocida';
+};
