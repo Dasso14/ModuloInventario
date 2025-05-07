@@ -1,115 +1,71 @@
-import { useState } from 'react';
-import { Button, Table, Form, Modal } from 'react-bootstrap';
+// app/products/page.js
+"use client";
 
-export default function Products() {
-  const [showModal, setShowModal] = useState(false);
-  
-  const sampleData = [{
-    product_id: 1,
-    sku: 'PROD-001',
-    name: 'Laptop Gamer',
-    unit_price: 1500,
-    unit_cost: 1200,
-    unit_measure: 'unidad',
-    min_stock: 5
-  }];
+import { Container, Table, Button } from 'react-bootstrap';
+import Link from 'next/link';
+import { getProducts, exampleCategories, exampleSuppliers } from '@/lib/product-data'; // Ajusta la ruta si es necesario
+
+export default function ProductListPage() {
+  const products = getProducts(); // Obtiene datos de ejemplo
+
+  // Funciones auxiliares para obtener nombres (simulación de JOIN)
+  const getCategoryName = (categoryId) => {
+      const category = exampleCategories.find(cat => cat.category_id === categoryId);
+      return category ? category.name : 'Desconocida';
+  };
+   const getSupplierName = (supplierId) => {
+      const supplier = exampleSuppliers.find(sup => sup.supplier_id === supplierId);
+      return supplier ? supplier.name : 'Desconocido';
+  };
+
 
   return (
-    <div className="container mt-4">
-      <h1>Gestión de Productos</h1>
-      <Button variant="primary" onClick={() => setShowModal(true)}>
-        Nuevo Producto
-      </Button>
+    <> {/* El Container principal viene del layout */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1>Lista de Productos</h1>
+        <Link href="/products/create" passHref legacyBehavior> {/* Usamos legacyBehavior con as=Button si queremos que Link renderice el Button */}
+           <Button variant="primary">Crear Nuevo Producto</Button>
+        </Link>
+      </div>
 
-      <Table striped bordered hover className="mt-3">
+      {/* Aquí iría la barra de búsqueda/filtrado si la implementas */}
+
+      <Table striped bordered hover responsive>
         <thead>
           <tr>
             <th>SKU</th>
             <th>Nombre</th>
-            <th>Precio</th>
-            <th>Costo</th>
-            <th>Stock Mínimo</th>
+            <th>Categoría</th>
+            <th>Proveedor</th>
+            <th>Precio Unitario</th>
+            <th>Stock (Total Ejemplo)</th>{/* Nota: Stock real requiere unir con stock_levels y sumar */}
+            <th>Activo</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {sampleData.map(prod => (
-            <tr key={prod.product_id}>
-              <td>{prod.sku}</td>
-              <td>{prod.name}</td>
-              <td>${prod.unit_price}</td>
-              <td>${prod.unit_cost}</td>
-              <td>{prod.min_stock}</td>
+          {products.map(product => (
+            <tr key={product.product_id}>
+              <td>{product.sku}</td>
+              <td>{product.name}</td>
+              <td>{getCategoryName(product.category_id)}</td> {/* Usando función auxiliar */}
+              <td>{getSupplierName(product.supplier_id)}</td> {/* Usando función auxiliar */}
+              <td>${product.unit_price.toFixed(2)}</td>
+              <td>{/* Stock real aquí - SIMULADO */} N/A</td>{/* En un sistema real, buscarías el stock total o por ubicación */}
+              <td>{product.is_active ? 'Sí' : 'No'}</td>
               <td>
-                <Button variant="warning" size="sm" className="me-2">Editar</Button>
-                <Button variant="danger" size="sm">Eliminar</Button>
+                <Link href={`/products/${product.product_id}`} passHref legacyBehavior>
+                  <Button variant="info" size="sm" className="me-2">Ver</Button>
+                </Link>
+                 <Link href={`/products/${product.product_id}/edit`} passHref legacyBehavior>
+                  <Button variant="warning" size="sm" className="me-2">Editar</Button>
+                </Link>
+                 <Button variant="danger" size="sm" onClick={() => alert(`Eliminar producto ${product.name}`)}>Eliminar</Button> {/* Implementar lógica real */}
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
-
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Nuevo Producto</Modal.Title>
-        </Modal.Header>
-        <Form>
-          <Modal.Body>
-            <div className="row">
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>SKU</Form.Label>
-                  <Form.Control type="text" required />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Nombre</Form.Label>
-                  <Form.Control type="text" required />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Unidad de Medida</Form.Label>
-                  <Form.Select>
-                    <option value="unidad">Unidad</option>
-                    <option value="litro">Litro</option>
-                    <option value="kilogramo">Kilogramo</option>
-                  </Form.Select>
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>Precio Unitario</Form.Label>
-                  <Form.Control type="number" step="0.01" />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Costo Unitario</Form.Label>
-                  <Form.Control type="number" step="0.01" />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Stock Mínimo</Form.Label>
-                  <Form.Control type="number" />
-                </Form.Group>
-              </div>
-            </div>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Descripción</Form.Label>
-              <Form.Control as="textarea" rows={3} />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" type="submit">
-              Guardar
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-    </div>
+    </>
   );
 }
