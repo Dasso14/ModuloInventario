@@ -4,6 +4,7 @@ from psycopg2 import errors as psycopg2_errors
 from typing import List, Optional, Dict
 from inventory.utils.database import Database
 from inventory.models.product import Product
+from datetime import datetime
 
 class DatabaseError(Exception):
     """Base exception para errores de base de datos"""

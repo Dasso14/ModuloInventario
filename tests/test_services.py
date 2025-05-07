@@ -1,31 +1,32 @@
+from unittest.mock import patch
 from inventory.services.inventory_service import InventoryService
 from inventory.utils.database import Database
+from inventory.models.product import Product
+from datetime import datetime
+
 
 def test_add_product_with_mock_data():
-    Database.initialize()
     service = InventoryService()
-    
-    data = {
-        "product_id": 0,
-        "sku": "TEST-001",
-        "name": "Teclado",
-        "description": "Teclado mecánico",
+    now = datetime.utcnow()
+    product_data = {
+        "sku": "MOCK123",
+        "name": "Producto Mock",
+        "description": "Descripción mock",
         "category_id": 1,
         "supplier_id": 1,
-        "unit_cost": 20.0,
-        "unit_price": 40.0,
+        "unit_cost": 5.0,
+        "unit_price": 10.0,
         "unit_measure": "unidad",
-        "weight": 0.8,
-        "volume": 0.02,
-        "min_stock": 5,
-        "max_stock": 50,
+        "weight": 0.5,
+        "volume": 0.2,
+        "min_stock": 2,
+        "max_stock": 20,
         "is_active": True,
-        "created_at": __import__('datetime').datetime.now(),
-        "updated_at": __import__('datetime').datetime.now(),
+        "created_at": now,
+        "updated_at": now
     }
 
-    try:
-        product_id = service.add_product(data)
-        assert isinstance(product_id, int)
-    except Exception:
-        assert False, "Falló al agregar producto válido"
+    with patch.object(service.product_dao, 'create', return_value=1) as mock_create:
+        product_id = service.add_product(product_data)
+        mock_create.assert_called_once()
+        assert product_id == 1

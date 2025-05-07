@@ -1,8 +1,10 @@
 import psycopg2
+
 from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from src.inventory.utils.config import Config
-
+from inventory.database import Database
+from inventory.utils.config import Config
 def setup_database():
     try:
         # 1. Conectar a PostgreSQL para crear la DB
@@ -56,6 +58,7 @@ def setup_database():
     finally:
         if 'conn' in locals() and conn:
             conn.close()
+
 
 if __name__ == "__main__":
     setup_database()
