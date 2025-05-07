@@ -1,2 +1,0 @@
-[console_scripts]
-inventory-cli = inventory.cli:main
