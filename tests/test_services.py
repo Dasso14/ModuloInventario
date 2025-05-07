@@ -1,7 +1,9 @@
 from unittest.mock import patch
 from inventory.services.inventory_service import InventoryService
+from inventory.utils.database import Database
 from inventory.models.product import Product
 from datetime import datetime
+
 
 def test_add_product_with_mock_data():
     service = InventoryService()

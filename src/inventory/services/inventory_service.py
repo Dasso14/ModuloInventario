@@ -7,17 +7,18 @@ class InventoryService:
         self.product_dao = ProductDAO()
         self.transaction_dao = TransactionDAO()
 
-    def add_product(self, product_data: dict):
-        
-        if not self._validate_product_data(product_data):
-            raise ValueError("Invalid product data")
-        
-        product = Product(**product_data)
-        return self.product_dao.create(product)
+    def add_product(self, product_data: dict) -> int:
+        try:
+            product = Product(**product_data)
+            return self.product_dao.create(product)
+        except Exception as e:
+            raise RuntimeError(f"Error en servicio: {str(e)}")
+
+    @staticmethod
+    def _validate_product_data(product_data: dict) -> bool:
+        required = ['sku', 'name', 'category_id', 'supplier_id', 'unit_cost', 'unit_price']
+        return all(field in product_data for field in required)
 
     def get_product_stock(self, product_id: int, location_id: int) -> float:
         return self.transaction_dao.get_current_stock(product_id, location_id)
 
-    def _validate_product_data(self, product_data: dict) -> bool:
-       
-        return True
