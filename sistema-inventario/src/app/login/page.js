@@ -53,6 +53,7 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                maxLength="80"
               />
             </div>
 
@@ -66,6 +67,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                maxLength="255" /* Límite común para contraseñas, aunque el hash sea de 128 */
               />
             </div>
 

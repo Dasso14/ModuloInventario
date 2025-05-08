@@ -121,28 +121,28 @@ export default function EditSupplierPage() {
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label htmlFor="nameInput" className="form-label">Nombre del Proveedor</label>
-                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required />
+                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />
                     </div>
 
                     <div className="row g-3 mb-3">
                         <div className="col-md-6">
                             <label htmlFor="contactNameInput" className="form-label">Nombre de Contacto</label>
-                            <input type="text" className="form-control" id="contactNameInput" name="contact_name" value={formData.contact_name} onChange={handleChange} />
+                            <input type="text" className="form-control" id="contactNameInput" name="contact_name" value={formData.contact_name} onChange={handleChange} maxLength="255" />
                         </div>
                          <div className="col-md-6">
                             <label htmlFor="phoneInput" className="form-label">Teléfono</label>
-                            <input type="tel" className="form-control" id="phoneInput" name="phone" value={formData.phone} onChange={handleChange} />
+                            <input type="tel" className="form-control" id="phoneInput" name="phone" value={formData.phone} onChange={handleChange} maxLength="50" />
                         </div>
                     </div>
 
                      <div className="row g-3 mb-3">
                          <div className="col-md-6">
                             <label htmlFor="emailInput" className="form-label">Email</label>
-                            <input type="email" className="form-control" id="emailInput" name="email" value={formData.email} onChange={handleChange} />
+                            <input type="email" className="form-control" id="emailInput" name="email" value={formData.email} onChange={handleChange} maxLength="100" />
                         </div>
                          <div className="col-md-6">
                             <label htmlFor="taxIdInput" className="form-label">RFC / Tax ID</label>
-                            <input type="text" className="form-control" id="taxIdInput" name="tax_id" value={formData.tax_id} onChange={handleChange} />
+                            <input type="text" className="form-control" id="taxIdInput" name="tax_id" value={formData.tax_id} onChange={handleChange} maxLength="50" />
                         </div>
                     </div>
 
