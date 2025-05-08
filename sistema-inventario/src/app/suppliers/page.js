@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { toast } from 'react-hot-toast';
-import { getSuppliers } from '../../../lib/product-data'; // Ajusta la ruta si es necesario
+import { toast } from 'react-hot-toast'; // Asegúrate de tener react-hot-toast instalado
+import { getSuppliers } from '../../../lib/product-data'; // Ya no necesitas esta importación simulada
 
 export default function SupplierListPage() {
   const [suppliers, setSuppliers] = useState([]);
