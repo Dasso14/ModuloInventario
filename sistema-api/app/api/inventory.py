@@ -4,6 +4,7 @@
 from flask import request, jsonify, Blueprint
 # Import your backend service layer for inventory operations
 # Assuming you have a service like InventoryService to handle database interactions
+from . import inventory_bp
 from ..services import InventoryService
 from ..utils.exceptions import (
     NotFoundException,
@@ -13,14 +14,13 @@ from ..utils.exceptions import (
 )
 
 # Define the blueprint for inventory routes
-# Make sure this blueprint is imported and registered in inventory_api/app/api/__init__.py
-inventory_bp = Blueprint('inventory_api', __name__, url_prefix='/api/inventory')
+
 
 # Instantiate your InventoryService
 # This service class should contain the logic to interact with your models/DB
 inventory_service = InventoryService()
 
-@inventory_bp.route('/add', methods=['POST'])
+@inventory_bp.route('/add', methods=['POST','OPTIONS'])
 def add_stock():
     """POST /api/inventory/add - Registers an inventory addition."""
     data = request.get_json()
@@ -79,7 +79,7 @@ def add_stock():
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@inventory_bp.route('/adjust', methods=['POST'])
+@inventory_bp.route('/adjust', methods=['POST','OPTIONS'])
 def adjust_stock():
     """POST /api/inventory/adjust - Registers an inventory adjustment."""
     data = request.get_json()
@@ -149,7 +149,7 @@ def adjust_stock():
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@inventory_bp.route('/remove', methods=['POST'])
+@inventory_bp.route('/remove', methods=['POST','OPTIONS'])
 def remove_stock():
     """POST /api/inventory/remove - Registers an inventory removal."""
     data = request.get_json()
@@ -208,7 +208,7 @@ def remove_stock():
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@inventory_bp.route('/transfer', methods=['POST'])
+@inventory_bp.route('/transfer', methods=['POST','OPTIONS'])
 def transfer_stock():
     """POST /api/inventory/transfer - Registers a stock transfer."""
     data = request.get_json()

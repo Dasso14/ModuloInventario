@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from .db import db
-from .api import products_bp, categories_bp, suppliers_bp, locations_bp, transactions_bp, transfers_bp, reports_bp
+from .api import products_bp, categories_bp, suppliers_bp, locations_bp, transactions_bp, transfers_bp, reports_bp, auth_bp, inventory_bp
 from flask_migrate import Migrate
 
 migrate = Migrate()
@@ -26,6 +26,8 @@ def create_app(config_object='config.DevelopmentConfig'):
     app.register_blueprint(transactions_bp)
     app.register_blueprint(transfers_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(inventory_bp)
 
 
     return app

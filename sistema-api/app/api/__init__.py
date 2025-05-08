@@ -11,6 +11,7 @@ transactions_bp = Blueprint('transactions_api', __name__, url_prefix='/api/trans
 transfers_bp = Blueprint('transfers_api', __name__, url_prefix='/api/transfers')
 reports_bp = Blueprint('reports_api', __name__, url_prefix='/api/reports') # Blueprint for reports group
 inventory_bp = Blueprint('inventory_api', __name__, url_prefix='/api/inventory') # <-- Add this line
+auth_bp = Blueprint('auth_api', __name__, url_prefix='/api/auth') # <-- Add this line for authentication
 
 # Import routes to associate them with the blueprints
 # The files below will define the routes and use these blueprint objects
@@ -22,6 +23,7 @@ from . import transactions # Handles /api/transactions and /api/stock-levels
 from . import transfers # Handles /api/transfers list/get
 from . import reports    # Handles /api/reports/low-stock, potentially others
 from . import inventory
+from . import login # <-- Add this line to import the login routes
 
 # This file will be imported in your Flask app factory (app/__init__.py)
 # to register the blueprints with the Flask application.
