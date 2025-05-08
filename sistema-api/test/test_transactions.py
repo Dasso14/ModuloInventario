@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import MagicMock, patch
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask
 
@@ -34,7 +34,7 @@ class MockTransaction:
         self.user_id = user_id
         self.reference_number = reference_number
         self.notes = notes
-        self.timestamp = timestamp or datetime.utcnow() # Add timestamp
+        self.timestamp = timestamp or datetime.now(timezone.utc) 
 
 
     def to_dict(self):
@@ -78,7 +78,7 @@ def test_create_transaction_success(mock_create_transaction, test_client):
         'notes': 'Initial stock'
     }
     # Need a datetime for the mock object
-    mock_timestamp = datetime.utcnow()
+    mock_timestamp = datetime.now(timezone.utc)
     mock_created_transaction = MockTransaction(id=1, timestamp=mock_timestamp, **transaction_data)
     mock_create_transaction.return_value = mock_created_transaction
 
