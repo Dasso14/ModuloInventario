@@ -4,47 +4,87 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getCategoryById, getCategoryName } from '../../../../lib/product-data'; // Ajusta la ruta si es necesario
+// Import from your service
+import { getCategoryById, getAllCategories } from '../../../services/categoryService';
 
 export default function CategoryDetailPage() {
   const params = useParams();
+  // Ensure categoryId is a number
   const categoryId = params.id ? parseInt(params.id, 10) : null;
 
   const [category, setCategory] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [parentNames, setParentNames] = useState({}); // To store parent category names
+  const [loadingParents, setLoadingParents] = useState(true);
+
 
   useEffect(() => {
-    if (categoryId !== null && !isNaN(categoryId)) {
-      setLoading(true);
-      setError(null);
-      // Simular carga de datos
-      const foundCategory = getCategoryById(categoryId);
+    const fetchData = async () => {
+        if (categoryId === null || isNaN(categoryId)) {
+            setError("ID de categoría inválido en la URL.");
+            setLoading(false);
+             setLoadingParents(false);
+            return;
+        }
 
-      if (foundCategory) {
-          setCategory(foundCategory);
-           setLoading(false);
-      } else {
-           setError(`Categoría con ID ${categoryId} no encontrada.`);
-           setLoading(false);
-      }
+        setLoading(true);
+        setError(null);
+        setLoadingParents(true);
 
-      // En un sistema real: fetch(`/api/categories/${categoryId}`).then(...)
-    } else {
-         setError("ID de categoría inválido en la URL.");
-         setLoading(false);
+        // Fetch the specific category
+        try {
+            const categoryResponse = await getCategoryById(categoryId);
+            if (categoryResponse && categoryResponse.success) {
+                setCategory(categoryResponse.data);
+                 setLoading(false);
+            } else {
+                 setError(categoryResponse?.message || `Failed to fetch category with ID ${categoryId}`);
+                 setLoading(false);
+                 // Do not return here, proceed to fetch parents even if category fetch failed
+            }
+        } catch (err) {
+            console.error(`Error fetching category ${categoryId}:`, err);
+            setError(err.message || `An error occurred while fetching category ${categoryId}.`);
+            setLoading(false);
+             // Do not return here
+        }
+
+         // Fetch all categories to build parent name map
+         try {
+            const parentsResponse = await getAllCategories();
+             if (parentsResponse && parentsResponse.success) {
+                const namesMap = parentsResponse.data.reduce((acc, cat) => {
+                    acc[cat.category_id] = cat.name;
+                    return acc;
+                }, {});
+                setParentNames(namesMap);
+             } else {
+                 console.error('Failed to fetch all categories for parent names:', parentsResponse?.message);
+             }
+         } catch (err) {
+             console.error('Error fetching all categories for parent names:', err);
+         } finally {
+            setLoadingParents(false);
+         }
+    };
+
+    fetchData();
+
+  }, [categoryId]); // Effect depends on categoryId
+
+
+    // Show loading states for initial data fetch
+    if (loading || loadingParents) { // Show loading while either category or parents are loading
+        return <div className="text-center text-primary">Cargando detalles de la categoría...</div>;
     }
-  }, [categoryId]);
 
-
-    if (loading) {
-        return <div className="text-center">Cargando...</div>;
-    }
-
+    // Show error if initial fetch failed
     if (error) {
-        return <div className="alert alert-danger">{error}</div>;
+        return <div className="alert alert-danger">Error: {error}</div>;
     }
 
+    // Show message if category data is somehow missing after loading
     if (!category) {
         return <div className="alert alert-warning">Categoría no disponible.</div>;
     }
@@ -68,8 +108,8 @@ export default function CategoryDetailPage() {
           <h5 className="card-title">Información General</h5>
           <p><strong>ID:</strong> {category.category_id}</p>
           <p><strong>Nombre:</strong> {category.name}</p>
-          {/* Usamos la función getCategoryName para mostrar el nombre del padre si existe */}
-          <p><strong>Categoría Padre:</strong> {category.parent_id ? getCategoryName(category.parent_id) : 'N/A'}</p>
+          {/* Use the parentNames map to display the parent name */}
+          <p><strong>Categoría Padre:</strong> {category.parent_id ? parentNames[category.parent_id] || `ID: ${category.parent_id}` : 'N/A'}</p>
           <p><strong>Descripción:</strong> {category.description || 'N/A'}</p>
            {/* Aquí podrías añadir listas de subcategorías o productos asociados */}
         </div>

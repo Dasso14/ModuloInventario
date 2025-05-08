@@ -1,15 +1,20 @@
 // app/inventory/add/page.js
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link'; // Usamos Link de next/link
-import { getProducts, getLocations } from '../../../../lib/product-data'; // Datos para selects
+import { useState, useEffect } from 'react'; // Import useEffect
+import Link from 'next/link';
+// Import services
+import { getAllProducts } from '../../services/productService';
+import { getAllLocations } from '../../services/locationService';
+import { addStock } from '../../services/inventoryService';
 import { useRouter } from 'next/navigation';
 
 export default function AddInventoryPage() {
   const router = useRouter();
-  const products = getProducts(); // Obtiene datos de productos
-  const locations = getLocations(); // Obtiene datos de ubicaciones
+  const [products, setProducts] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true); // Loading for dropdown data
+  const [fetchError, setFetchError] = useState(null); // Error fetching dropdown data
 
   const [formData, setFormData] = useState({
     product_id: '',
@@ -17,9 +22,48 @@ export default function AddInventoryPage() {
     quantity: '',
     reference_number: '',
     notes: '',
-    user_id: 1, // ID de usuario mock
+    // TODO: Replace hardcoded user_id with actual logged-in user's ID
+    user_id: 1,
   });
-    const [error, setError] = useState('');
+    const [formError, setFormError] = useState(''); // Error for form submission
+    const [isSubmitting, setIsSubmitting] = useState(false); // State for submission
+
+
+  useEffect(() => {
+      // Fetch products and locations concurrently
+      const fetchData = async () => {
+          setLoading(true);
+          setFetchError(null);
+          try {
+              const [productsResponse, locationsResponse] = await Promise.all([
+                  getAllProducts(),
+                  getAllLocations()
+              ]);
+
+              if (productsResponse && productsResponse.success) {
+                  setProducts(productsResponse.data);
+              } else {
+                  console.error('Failed to fetch products:', productsResponse?.message);
+                  setFetchError('Error al cargar la lista de productos.');
+              }
+
+               if (locationsResponse && locationsResponse.success) {
+                  setLocations(locationsResponse.data);
+              } else {
+                  console.error('Failed to fetch locations:', locationsResponse?.message);
+                   setFetchError('Error al cargar la lista de ubicaciones.');
+              }
+
+          } catch (err) {
+              console.error('Error fetching initial data:', err);
+              setFetchError('Ocurrió un error al cargar los datos necesarios.');
+          } finally {
+              setLoading(false);
+          }
+      };
+
+      fetchData();
+  }, []); // Fetch data on component mount
 
 
   const handleChange = (e) => {
@@ -28,46 +72,80 @@ export default function AddInventoryPage() {
       ...prevState,
       [name]: value,
     }));
-     setError(''); // Limpiar error al cambiar algo
+     setFormError(''); // Clear form error on change
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setFormError('');
 
     const quantityValue = parseFloat(formData.quantity);
 
-    // --- Validación simple ---
+    // --- Simple Validation ---
      if (!formData.product_id || !formData.location_id || isNaN(quantityValue) || quantityValue <= 0) {
-         setError('Por favor, complete todos los campos requeridos con valores válidos.');
+         setFormError('Por favor, complete todos los campos requeridos con valores válidos.');
          return;
      }
-     // --- Fin Validación simple ---
+     // --- End Simple Validation ---
 
-    console.log('Registrando Entrada:', formData);
+     setIsSubmitting(true); // Disable button
 
-    // --- Lógica para registrar la transacción (Entrada) ---
-    // fetch('/api/inventory/transactions', { ... })
 
-    // Simulación:
-    alert(`Entrada de ${formData.quantity} unidades del Producto ID ${formData.product_id} en Ubicación ID ${formData.location_id} registrada (simulado).`);
-    router.push('/reports/transactions'); // Redirigir a la lista de transacciones (simulado)
+    try {
+        // Call the addStock service function
+        const response = await addStock({
+            ...formData,
+            quantity: quantityValue, // Ensure quantity is sent as a number
+            // Include user_id from state (replace hardcoded value later)
+        });
 
+        if (response && response.success) {
+            console.log('Entrada de inventario registrada con éxito:', response.data);
+             alert('Entrada de inventario registrada con éxito.');
+            // Redirect to the transaction history report page
+            router.push('/reports/transactions');
+        } else {
+             // Handle API-specific success: false response structure
+             const errorMessage = response?.message || 'Error al registrar la entrada de inventario';
+             setFormError(errorMessage);
+             console.error('API Error registering stock addition:', errorMessage);
+              alert(`Error: ${errorMessage}`); // Show user-friendly error
+        }
+
+    } catch (err) {
+        console.error('Error registering stock addition:', err);
+        setFormError(err.message || 'Ocurrió un error al registrar la entrada.');
+         alert(`Error: ${err.message || 'Ocurrió un error'}`); // Show user-friendly error
+    } finally {
+        setIsSubmitting(false); // Re-enable button
+    }
   };
+
+   // Show loading state for dropdown data
+   if (loading) {
+       return <div className="text-center text-primary">Cargando datos de productos y ubicaciones...</div>;
+   }
+
+    // Show error if fetching dropdown data failed
+    if (fetchError) {
+       return <div className="alert alert-danger">Error al cargar los datos: {fetchError}</div>;
+    }
+
 
   return (
      <> {/* Usamos Fragmento porque el layout ya provee el contenedor principal */}
         {/* Encabezado con título y botón, usando flexbox de Bootstrap */}
         <div className="d-flex justify-content-between align-items-center mb-3">
             <h1>Registrar Entrada de Inventario</h1>
-             <Link href="/" passHref >
-                 <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
+             {/* Adjust the back link destination if needed */}
+             <Link href="/inventory" passHref > {/* Assuming /inventory is an index page */}
+                 <button type="button" className="btn btn-secondary">Volver</button>
             </Link>
         </div>
 
         <div className="card">
             <div className="card-body">
-                 {error && <div className="alert alert-danger">{error}</div>}
+                 {formError && <div className="alert alert-danger">{formError}</div>}
                 <form onSubmit={handleSubmit}>
                     {/* row con g-3 para espaciado entre columnas */}
                     <div className="row g-3 mb-3">
@@ -80,6 +158,7 @@ export default function AddInventoryPage() {
                                 value={formData.product_id}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione un producto</option>
                                 {products.map(product => (
@@ -97,6 +176,7 @@ export default function AddInventoryPage() {
                                 value={formData.location_id}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione una ubicación</option>
                                 {locations.map(location => (
@@ -118,6 +198,7 @@ export default function AddInventoryPage() {
                             onChange={handleChange}
                             required
                             min="0.01"
+                            disabled={isSubmitting} // Disable while submitting
                         />
                          <div className="form-text">Ingrese la cantidad a añadir al stock.</div>
                     </div>
@@ -131,7 +212,11 @@ export default function AddInventoryPage() {
                             name="reference_number"
                             value={formData.reference_number}
                             onChange={handleChange}
+<<<<<<< Updated upstream
                             maxLength="100"
+=======
+                             disabled={isSubmitting} // Disable while submitting
+>>>>>>> Stashed changes
                         />
                     </div>
 
@@ -144,11 +229,12 @@ export default function AddInventoryPage() {
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
+                            disabled={isSubmitting} // Disable while submitting
                         ></textarea>
                     </div>
 
-                    <button type="submit" className="btn btn-primary">
-                        Registrar Entrada
+                    <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                        {isSubmitting ? 'Registrando...' : 'Registrar Entrada'}
                     </button>
                 </form>
             </div>

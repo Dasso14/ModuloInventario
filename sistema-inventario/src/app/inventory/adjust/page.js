@@ -1,24 +1,68 @@
 // app/inventory/adjust/page.js
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect
 import Link from 'next/link';
-import { getProducts, getLocations } from '../../../../lib/product-data'; // Datos para selects
+// Import services
+import { getAllProducts } from '../../services/productService';
+import { getAllLocations } from '../../services/locationService';
+import { adjustStock } from '../../services/inventoryService';
 import { useRouter } from 'next/navigation';
 
 export default function AdjustInventoryPage() {
    const router = useRouter();
-  const products = getProducts();
-  const locations = getLocations();
+   const [products, setProducts] = useState([]);
+   const [locations, setLocations] = useState([]);
+   const [loading, setLoading] = useState(true); // Loading for dropdown data
+   const [fetchError, setFetchError] = useState(null); // Error fetching dropdown data
 
   const [formData, setFormData] = useState({
     product_id: '',
     location_id: '',
-    quantity: '', // Cantidad a ajustar (puede ser positiva o negativa)
+    quantity: '', // Adjustment quantity (can be positive or negative)
     notes: '',
+    // TODO: Replace hardcoded user_id
     user_id: 1,
   });
-    const [error, setError] = useState('');
+    const [formError, setFormError] = useState(''); // Error for form submission
+    const [isSubmitting, setIsSubmitting] = useState(false); // State for submission
+
+
+   useEffect(() => {
+      // Fetch products and locations concurrently
+      const fetchData = async () => {
+          setLoading(true);
+          setFetchError(null);
+          try {
+              const [productsResponse, locationsResponse] = await Promise.all([
+                  getAllProducts(),
+                  getAllLocations()
+              ]);
+
+              if (productsResponse && productsResponse.success) {
+                  setProducts(productsResponse.data);
+              } else {
+                  console.error('Failed to fetch products:', productsResponse?.message);
+                  setFetchError('Error al cargar la lista de productos.');
+              }
+
+               if (locationsResponse && locationsResponse.success) {
+                  setLocations(locationsResponse.data);
+              } else {
+                  console.error('Failed to fetch locations:', locationsResponse?.message);
+                   setFetchError('Error al cargar la lista de ubicaciones.');
+              }
+
+          } catch (err) {
+              console.error('Error fetching initial data:', err);
+              setFetchError('Ocurrió un error al cargar los datos necesarios.');
+          } finally {
+              setLoading(false);
+          }
+      };
+
+      fetchData();
+  }, []); // Fetch data on component mount
 
 
   const handleChange = (e) => {
@@ -30,43 +74,77 @@ export default function AdjustInventoryPage() {
      setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setFormError('');
 
     const adjustmentQuantity = parseFloat(formData.quantity);
 
-    // --- Validación simple ---
+    // --- Simple Validation ---
     if (!formData.product_id || !formData.location_id || isNaN(adjustmentQuantity) || adjustmentQuantity === 0) {
-         setError('Por favor, complete todos los campos requeridos con una cantidad de ajuste válida (positiva o negativa, pero no cero).');
+         setFormError('Por favor, complete todos los campos requeridos con una cantidad de ajuste válida (positiva o negativa, pero no cero).');
          return;
      }
-      if (!formData.notes.trim()) { // Notas son importantes para ajustes
-          setError('Por favor, ingrese el motivo del ajuste en las notas.');
+      if (!formData.notes.trim()) { // Notes are important for adjustments
+          setFormError('Por favor, ingrese el motivo del ajuste en las notas.');
           return;
       }
-     // --- Fin Validación simple ---
+     // --- End Simple Validation ---
 
-    console.log('Registrando Ajuste:', formData);
+    setIsSubmitting(true); // Disable button
 
-     // --- Lógica para registrar la transacción (Ajuste) ---
-    // fetch('/api/inventory/transactions', { ... })
+    try {
+        // Call the adjustStock service function
+        const response = await adjustStock({
+            ...formData,
+            quantity: adjustmentQuantity, // Ensure quantity is sent as a number
+            // Include user_id from state (replace hardcoded value later)
+        });
 
-    // Simulación:
-    alert(`Ajuste de ${adjustmentQuantity} unidades del Producto ID ${formData.product_id} en Ubicación ID ${formData.location_id} registrado (simulado).`);
-    router.push('/reports/transactions');
+        if (response && response.success) {
+            console.log('Ajuste de inventario registrado con éxito:', response.data);
+             alert('Ajuste de inventario registrado con éxito.');
+            // Redirect to the transaction history report page
+            router.push('/reports/transactions');
+        } else {
+             // Handle API-specific success: false response structure
+             const errorMessage = response?.message || 'Error al registrar el ajuste de inventario';
+             setFormError(errorMessage);
+             console.error('API Error registering stock adjustment:', errorMessage);
+              alert(`Error: ${errorMessage}`); // Show user-friendly error
+        }
+
+    } catch (err) {
+        console.error('Error registering stock adjustment:', err);
+        setFormError(err.message || 'Ocurrió un error al registrar el ajuste.');
+        alert(`Error: ${err.message || 'Ocurrió un error'}`); // Show user-friendly error
+    } finally {
+        setIsSubmitting(false); // Re-enable button
+    }
   };
+
+   // Show loading state for dropdown data
+   if (loading) {
+       return <div className="text-center text-primary">Cargando datos de productos y ubicaciones...</div>;
+   }
+
+    // Show error if fetching dropdown data failed
+    if (fetchError) {
+       return <div className="alert alert-danger">Error al cargar los datos: {fetchError}</div>;
+    }
+
 
   return (
      <>
         <div className="d-flex justify-content-between align-items-center mb-3">
             <h1>Ajuste de Stock</h1>
-             <Link href="/" passHref >
-                 <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
+             {/* Adjust the back link destination if needed */}
+             <Link href="/inventory" passHref > {/* Assuming /inventory is an index page */}
+                 <button type="button" className="btn btn-secondary">Volver</button>
             </Link>
         </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {formError && <div className="alert alert-danger">{formError}</div>}
 
         <div className="card">
             <div className="card-body">
@@ -81,6 +159,7 @@ export default function AdjustInventoryPage() {
                                 value={formData.product_id}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione un producto</option>
                                 {products.map(product => (
@@ -98,6 +177,7 @@ export default function AdjustInventoryPage() {
                                 value={formData.location_id}
                                 onChange={handleChange}
                                 required
+                                disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione una ubicación</option>
                                 {locations.map(location => (
@@ -118,6 +198,7 @@ export default function AdjustInventoryPage() {
                             value={formData.quantity}
                             onChange={handleChange}
                             required
+                            disabled={isSubmitting} // Disable while submitting
                         />
                         <div className="form-text">
                            Ingrese la cantidad exacta para ajustar el stock (ej: 5 para añadir, -3 para remover). No el nuevo total.
@@ -134,11 +215,12 @@ export default function AdjustInventoryPage() {
                             value={formData.notes}
                             onChange={handleChange}
                             required
+                            disabled={isSubmitting} // Disable while submitting
                         ></textarea>
                     </div>
 
-                    <button type="submit" className="btn btn-warning">
-                        Registrar Ajuste
+                    <button type="submit" className="btn btn-warning" disabled={isSubmitting}>
+                         {isSubmitting ? 'Registrando...' : 'Registrar Ajuste'}
                     </button>
                 </form>
             </div>
