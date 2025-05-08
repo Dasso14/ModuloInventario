@@ -66,15 +66,15 @@ export default function TransactionHistoryReportPage() {
                 <form className="row g-3">
                    <div className="col-md-3">
                        <label htmlFor="filterProduct" className="form-label">Producto</label>
-                       <input type="text" className="form-control form-control-sm" id="filterProduct" placeholder="Filtrar por producto" defaultValue={initialProductId} disabled />
+                       <input type="text" className="form-control form-control-sm" id="filterProduct" placeholder="Filtrar por producto" defaultValue={initialProductId} maxLength="255" />
                    </div>
                     <div className="col-md-3">
                        <label htmlFor="filterLocation" className="form-label">Ubicación</label>
-                       <input type="text" className="form-control form-control-sm" id="filterLocation" placeholder="Filtrar por ubicación" disabled />
+                       <input type="text" className="form-control form-control-sm" id="filterLocation" placeholder="Filtrar por ubicación" maxLength="255" />
                    </div>
                     <div className="col-md-2">
                        <label htmlFor="filterType" className="form-label">Tipo</label>
-                       <select className="form-select form-select-sm" id="filterType" disabled>
+                       <select className="form-select form-select-sm" id="filterType">
                            <option value="">Todos</option>
                            <option value="entrada">Entrada</option>
                            <option value="salida">Salida</option>
@@ -83,11 +83,11 @@ export default function TransactionHistoryReportPage() {
                    </div>
                      <div className="col-md-2">
                        <label htmlFor="filterStartDate" className="form-label">Fecha Desde</label>
-                       <input type="date" className="form-control form-control-sm" id="filterStartDate" disabled />
+                       <input type="date" className="form-control form-control-sm" id="filterStartDate" />
                    </div>
                     <div className="col-md-2">
                        <label htmlFor="filterEndDate" className="form-label">Fecha Hasta</label>
-                       <input type="date" className="form-control form-control-sm" id="filterEndDate" disabled />
+                       <input type="date" className="form-control form-control-sm" id="filterEndDate" />
                    </div>
                     <div className="col-md-2">
                        <button type="submit" className="btn btn-primary btn-sm mt-4" disabled>Aplicar Filtros</button>

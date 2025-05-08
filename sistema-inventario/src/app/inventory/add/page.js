@@ -131,6 +131,7 @@ export default function AddInventoryPage() {
                             name="reference_number"
                             value={formData.reference_number}
                             onChange={handleChange}
+                            maxLength="100"
                         />
                     </div>
 

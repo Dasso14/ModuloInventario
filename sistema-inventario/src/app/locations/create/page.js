@@ -95,7 +95,7 @@ export default function CreateLocationPage() {
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label htmlFor="nameInput" className="form-label">Nombre de la Ubicación</label>
-                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required />
+                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />
                     </div>
 
                      <div className="mb-3">

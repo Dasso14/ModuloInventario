@@ -38,11 +38,11 @@ export default function StockLevelsReportPage() {
                <form className="row g-3">
                    <div className="col-md-4">
                        <label htmlFor="filterProduct" className="form-label">Producto</label>
-                       <input type="text" className="form-control form-control-sm" id="filterProduct" placeholder="Filtrar por producto" disabled />
+                       <input type="text" className="form-control form-control-sm" id="filterProduct" placeholder="Filtrar por producto" maxLength="255" />
                    </div>
                     <div className="col-md-4">
                        <label htmlFor="filterLocation" className="form-label">Ubicación</label>
-                       <input type="text" className="form-control form-control-sm" id="filterLocation" placeholder="Filtrar por ubicación" disabled />
+                       <input type="text" className="form-control form-control-sm" id="filterLocation" placeholder="Filtrar por ubicación" maxLength="255" />
                    </div>
                     <div className="col-md-2">
                        <button type="submit" className="btn btn-primary btn-sm mt-4" disabled>Aplicar Filtros</button>

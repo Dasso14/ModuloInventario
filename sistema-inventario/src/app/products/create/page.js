@@ -64,12 +64,11 @@ export default function CreateProductPage() {
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formSku">
                 <Form.Label>SKU</Form.Label>
-                <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} required />
+                <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} required maxLength="50" />
               </Form.Group>
               <Form.Group as={Col} controlId="formName">
                 <Form.Label>Nombre</Form.Label>
-                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required />
-              </Form.Group>
+                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />              </Form.Group>
             </Row>
 
             <Form.Group className="mb-3" controlId="formDescription">
@@ -102,11 +101,11 @@ export default function CreateProductPage() {
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formUnitCost">
                 <Form.Label>Costo Unitario</Form.Label>
-                <Form.Control type="number" step="0.01" name="unit_cost" value={formData.unit_cost} onChange={handleChange} required />
+                <Form.Control type="number" step="0.01" name="unit_cost" value={formData.unit_cost} onChange={handleChange} required min="0" />
               </Form.Group>
               <Form.Group as={Col} controlId="formUnitPrice">
                 <Form.Label>Precio Unitario</Form.Label>
-                <Form.Control type="number" step="0.01" name="unit_price" value={formData.unit_price} onChange={handleChange} required />
+                <Form.Control type="number" step="0.01" name="unit_price" value={formData.unit_price} onChange={handleChange} required min="0" />
               </Form.Group>
               <Form.Group as={Col} controlId="formUnitMeasure">
                 <Form.Label>Unidad de Medida</Form.Label>
@@ -123,22 +122,22 @@ export default function CreateProductPage() {
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formWeight">
                 <Form.Label>Peso (kg)</Form.Label>
-                <Form.Control type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} />
+                <Form.Control type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} min="0" />
               </Form.Group>
               <Form.Group as={Col} controlId="formVolume">
                 <Form.Label>Volumen (m³)</Form.Label>
-                <Form.Control type="number" step="0.01" name="volume" value={formData.volume} onChange={handleChange} />
+                <Form.Control type="number" step="0.01" name="volume" value={formData.volume} onChange={handleChange} min="0" />
               </Form.Group>
             </Row>
 
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formMinStock">
                 <Form.Label>Stock Mínimo</Form.Label>
-                <Form.Control type="number" name="min_stock" value={formData.min_stock} onChange={handleChange} required />
+                <Form.Control type="number" name="min_stock" value={formData.min_stock} onChange={handleChange} required min="0" />
               </Form.Group>
               <Form.Group as={Col} controlId="formMaxStock">
                 <Form.Label>Stock Máximo</Form.Label>
-                <Form.Control type="number" name="max_stock" value={formData.max_stock} onChange={handleChange} />
+                <Form.Control type="number" name="max_stock" value={formData.max_stock} onChange={handleChange} min="0" />
               </Form.Group>
             </Row>
 
