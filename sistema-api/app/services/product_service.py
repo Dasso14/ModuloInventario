@@ -1,9 +1,10 @@
 # inventory_api/app/services/product_service.py
 
 from .base_service import BaseService
-from ..models import Product, Category, Supplier
+from ..models import Product, Category, Supplier, StockLevel
 from ..db import db
 from ..utils.exceptions import NotFoundException, ConflictException
+from sqlalchemy.orm import joinedload # Import joinedload
 
 class ProductService(BaseService):
     def __init__(self):
@@ -101,3 +102,28 @@ class ProductService(BaseService):
     def get_products_by_category(self, category_id):
         """Gets all active products in a specific category."""
         return self.model.query.filter(self.model.category_id == category_id, self.model.is_active == True).all()
+    
+ # --- METHOD TO GET STOCK LEVELS BY PRODUCT ID (FIXED QUERY) ---
+    def get_stock_levels_by_product_id(self, product_id):
+        """
+        Gets all stock levels for a specific product across all locations.
+        Returns a list of StockLevel objects with product and location relationships loaded.
+        """
+        # First, check if the product exists
+        # Use the standard model.query or db.session.query
+        # Using Product.query is the most idiomatic Flask-SQLAlchemy way
+        product = Product.query.filter(Product.id == product_id).first()
+        if not product:
+            raise NotFoundException(f"Product with ID {product_id} not found.")
+
+        # Query StockLevel model, filtering by product_id
+        # Use StockLevel.query and joinedload
+        stock_levels = StockLevel.query\
+            .filter(StockLevel.product_id == product_id)\
+            .options(joinedload(StockLevel.product), joinedload(StockLevel.location))\
+            .all()
+
+        # stock_levels will be a list of StockLevel objects with relationships loaded.
+        # The API endpoint will convert these to dictionaries using sl.to_dict().
+        return stock_levels
+    # --- END METHOD ---
