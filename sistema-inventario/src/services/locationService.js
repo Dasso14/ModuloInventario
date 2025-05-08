@@ -1,13 +1,7 @@
 // inventory_api/app/services/locationsService.js
 import { fetchApi } from './api'; // Assuming fetchApi is in './api.js' or similar
 
-/**
- * Builds a query string from filter, pagination, and sorting objects.
- * @param {object} filters - Filter parameters (e.g., { name: 'Warehouse', is_active: true, parent_id: 1 | null }).
- * @param {object} pagination - Pagination parameters (e.g., { page: 1, limit: 10 }).
- * @param {object} sorting - Sorting parameters (e.g., { name: 'asc', created_at: 'desc' }). Key is field, value is 'asc' or 'desc'.
- * @returns {string} The query string, starting with '?' if parameters exist.
- */
+
 const buildQueryString = (filters = {}, pagination = {}, sorting = {}) => {
   const params = new URLSearchParams();
 
