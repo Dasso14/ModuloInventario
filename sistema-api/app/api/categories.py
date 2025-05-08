@@ -24,15 +24,8 @@ def list_categories():
             else:
                 try:
                     filters['parent_id'] = int(parent_id_str)
-<<<<<<< Updated upstream
-                    if filters['parent_id'] < 0:
-                        return jsonify({'success': False, 'message': 'parent_id must be non-negative'}), 400
                 except ValueError:
-                    return jsonify({'success': False, 'message': 'Invalid parent_id'}), 400
-=======
-                 except ValueError:
                     return jsonify({'success': False, 'message': 'Invalid parent_id'}), 400, {'Access-Control-Allow-Origin':'*'}
->>>>>>> Stashed changes
 
         pagination = {}  # Add pagination parsing if needed
         sorting = {}  # Add sorting parsing if needed
