@@ -16,6 +16,8 @@ from ..utils.exceptions import DatabaseException
 from sqlalchemy import func, and_ # For calling DB functions and combining filters
 from sqlalchemy.exc import OperationalError
 from datetime import datetime, timedelta # Import timedelta for date range filtering
+from sqlalchemy.orm import aliased
+
 
 
 class ReportService(BaseService):
@@ -259,76 +261,66 @@ class ReportService(BaseService):
         Filters can include: product_id, from_location_id, to_location_id, user_id, date range.
         Supports pagination and sorting. Returns a list of dictionaries.
         """
+        # Define aliases for the Location model for joining it twice
+        FromLocation = aliased(Location)
+        ToLocation = aliased(Location)
+
         # Start with the base query for LocationTransfer
-        # Join with Product, From Location (aliased), To Location (aliased), and User for filtering/sorting
-        # You might need to define aliases for Location in your models for distinct joins
-        # Example using aliased Location:
-        # from sqlalchemy.orm import aliased
-        # FromLocation = aliased(Location)
-        # ToLocation = aliased(Location)
-        # query = LocationTransfer.query.join(Product).join(
-        #     FromLocation, LocationTransfer.from_location_id == FromLocation.location_id
-        # ).join(
-        #     ToLocation, LocationTransfer.to_location_id == ToLocation.location_id
-        # ).join(User)
-        # Note: The current join syntax `join(Location, ...)` might work depending on your model definitions,
-        # but using aliases is safer for clarity and avoiding potential issues with multiple joins to the same table.
-        # For now, keeping the original join syntax as provided, assuming it works with your models.
+        # Join with Product, From Location (aliased), To Location (aliased), and User
+        # Use the aliases and the correct primary key column name (likely 'id') for Location
         query = LocationTransfer.query.join(Product).join(
-            Location, LocationTransfer.from_location_id == Location.location_id
+            FromLocation, LocationTransfer.from_location_id == FromLocation.id # <-- Use alias and .id
         ).join(
-            Location, LocationTransfer.to_location_id == Location.location_id
+            ToLocation, LocationTransfer.to_location_id == ToLocation.id       # <-- Use alias and .id
         ).join(User)
 
-
-        # Apply filters
+        # Apply filters (ensure filters on location IDs now use the aliases' IDs)
         if filters:
             if 'product_id' in filters and filters['product_id'] is not None:
                 query = query.filter(LocationTransfer.product_id == filters['product_id'])
             if 'from_location_id' in filters and filters['from_location_id'] is not None:
-                query = query.filter(LocationTransfer.from_location_id == filters['from_location_id'])
+                # Filter on the ID of the 'FromLocation' alias
+                query = query.filter(FromLocation.id == filters['from_location_id']) # <-- Use alias and .id
             if 'to_location_id' in filters and filters['to_location_id'] is not None:
-                query = query.filter(LocationTransfer.to_location_id == filters['to_location_id'])
+                 # Filter on the ID of the 'ToLocation' alias
+                 query = query.filter(ToLocation.id == filters['to_location_id'])     # <-- Use alias and .id
             if 'user_id' in filters and filters['user_id'] is not None:
                 query = query.filter(LocationTransfer.user_id == filters['user_id'])
+            # ... date filters ...
             if 'start_date' in filters and filters['start_date'] is not None:
                  try:
-                    # Parse start date string (assuming format like 'YYYY-MM-DD')
                     start_date = datetime.strptime(filters['start_date'], '%Y-%m-%d')
                     query = query.filter(LocationTransfer.transfer_date >= start_date)
                  except ValueError:
                     print(f"Warning: Invalid start_date format: {filters['start_date']}")
-                    pass # Or raise an exception
+                    pass
             if 'end_date' in filters and filters['end_date'] is not None:
                  try:
-                    # Parse end date string (assuming format like 'YYYY-MM-DD')
-                    # Add one day to include the entire end day
                     end_date = datetime.strptime(filters['end_date'], '%Y-%m-%d')
                     query = query.filter(LocationTransfer.transfer_date < end_date + timedelta(days=1))
                  except ValueError:
                     print(f"Warning: Invalid end_date format: {filters['end_date']}")
-                    pass # Or raise an exception
+                    pass
             # Add filters for other relevant fields (e.g., notes)
 
-        # Apply sorting
+
+        # Apply sorting (handle sorting by alias names if needed)
         if sorting:
              for sort_key, sort_order in sorting.items():
-                # Determine the column to sort by, handling joined fields
                 column = None
                 if sort_key == 'transfer_date':
-                    column = LocationTransfer.transfer_date # Direct column
+                    column = LocationTransfer.transfer_date
                 elif sort_key == 'product_name':
-                    column = Product.name # Via joined Product
-                # Sorting by from/to location names requires careful handling with aliased joins
-                # If you need this, you'd use something like:
-                # elif sort_key == 'from_location_name':
-                #     column = FromLocation.name
-                # elif sort_key == 'to_location_name':
-                #     column = ToLocation.name
+                    column = Product.name
+                # If you need to sort by location name, use the aliases:
+                elif sort_key == 'from_location_name': # Example sort key
+                    column = FromLocation.name # <-- Use alias name
+                elif sort_key == 'to_location_name':   # Example sort key
+                    column = ToLocation.name   # <-- Use alias name
                 elif sort_key == 'user_username':
-                    column = User.username # Via joined User
+                    column = User.username
                 elif sort_key == 'quantity':
-                    column = LocationTransfer.quantity # Direct column
+                    column = LocationTransfer.quantity
                 # Add sorting for other relevant fields
 
                 if column is not None:
@@ -337,10 +329,13 @@ class ReportService(BaseService):
                     else:
                         query = query.order_by(column.asc())
 
-        # Default sorting if no sorting is specified
+        # Default sorting
         if not sorting:
              # Default sort by transfer date descending
              query = query.order_by(LocationTransfer.transfer_date.desc())
+             # Consider adding secondary sort by location names if desired after fixing aliases
+             # query = query.order_by(LocationTransfer.transfer_date.desc(), FromLocation.name.asc(), ToLocation.name.asc())
+
 
         # Apply pagination
         if pagination and 'page' in pagination and 'limit' in pagination:
@@ -349,13 +344,15 @@ class ReportService(BaseService):
             offset = (page - 1) * limit
             items = query.limit(limit).offset(offset).all()
         else:
-            # If no pagination, return all results
             items = query.all()
 
         # --- Convert list of SQLAlchemy objects to list of dictionaries ---
-        # This assumes your LocationTransfer model has a .to_dict() method
+        # Your LocationTransfer model's .to_dict() method should now be able
+        # to access the related objects via relationships (e.g., transfer.from_location.name, transfer.to_location.name)
+        # because the joins in the query made them available.
         return [item.to_dict() for item in items]
         # -----------------------------------------------------------------
+
 
     def get_inventory_total_value(self):
         """

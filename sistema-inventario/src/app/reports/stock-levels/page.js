@@ -105,13 +105,11 @@ export default function StockLevelsReportPage() {
       {/* Header with title and back button */}
       <div className="d-flex justify-content-between align-items-center mb-4"> {/* Increased bottom margin */}
         <h1>Reporte de Niveles de Stock</h1>
-         {/* Adjust the back link destination if needed */}
          <Link href="/" passHref > {/* Assuming / is your dashboard */}
             <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
         </Link>
       </div>
 
-      {/* Placeholder for Filters (Implement filter UI and state updates here) */}
        <div className="card mb-4"> {/* Increased bottom margin */}
            <div className="card-body">
                <h6 className="card-title">Filtros</h6>
@@ -124,8 +122,6 @@ export default function StockLevelsReportPage() {
                            // onChange={(e) => setFilters({...filters, productId: e.target.value ? parseInt(e.target.value) : null})} // Update state
                        >
                            <option value="">Todos los productos</option>
-                           {/* Map your products data here */}
-                           {/* {products.map(prod => <option key={prod.id} value={prod.id}>{prod.sku} - {prod.name}</option>)} */}
                        </select>
                    </div>
                     <div className="col-md-3">
@@ -135,8 +131,7 @@ export default function StockLevelsReportPage() {
                            // onChange={(e) => setFilters({...filters, locationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
                        >
                            <option value="">Todas las ubicaciones</option>
-                           {/* Map your locations data here */}
-                           {/* {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)} */}
+                         
                        </select>
                    </div>
                     <div className="col-md-3">
@@ -146,13 +141,10 @@ export default function StockLevelsReportPage() {
                            // onChange={(e) => setFilters({...filters, categoryId: e.target.value ? parseInt(e.target.value) : null})} // Update state
                        >
                            <option value="">Todas las categorías</option>
-                           {/* Map your categories data here */}
-                           {/* {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)} */}
+                     
                        </select>
                    </div>
-                    {/* Add other filters (Supplier, etc.) */}
                     <div className="col-md-2 d-flex align-items-end"> {/* Align button to the bottom */}
-                       {/* Filter button - onClick should trigger filter state update */}
                        <button type="button" className="btn btn-primary btn-sm w-100"
                            // onClick={() => { /* Trigger fetch by updating filter state */ }}
                            disabled // Disable until filter logic is implemented
@@ -162,8 +154,6 @@ export default function StockLevelsReportPage() {
            </div>
        </div>
 
-
-      {/* Display the report data */}
       {stockLevels.length === 0 ? (
            <div className="alert alert-info text-center" role="alert"> {/* Added role="alert" */}
                No hay niveles de stock registrados.
@@ -173,7 +163,6 @@ export default function StockLevelsReportPage() {
                 <table className="table table-striped table-bordered table-hover table-sm">
                   <thead>
                     <tr>
-                      {/* Table headers - adjust based on actual data structure */}
                       <th>Producto</th>
                       <th>Ubicación</th>
                       <th>Cantidad</th>
@@ -181,16 +170,13 @@ export default function StockLevelsReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Map over the fetched stockLevels */}
                     {stockLevels.map(item => (
                       // Use a unique key, like stock_id if available, or a combination
                       // Assuming stock_levels table has a stock_id or product_id+location_id is unique
                       <tr key={item.stock_id || `${item.product_id}-${item.location_id}`}>
-                         {/* Access properties directly from the API response data */}
-                        <td>{item.product_name}</td> {/* Assuming API returns product_name */}
-                        <td>{item.location_name}</td> {/* Assuming API returns location_name */}
+                        <td>{item.product_name}</td> 
+                        <td>{item.location_name}</td> 
                         <td>{item.quantity}</td>
-                        {/* Format the date if it's a string */}
                         <td>{item.last_updated ? new Date(item.last_updated).toLocaleString() : 'N/A'}</td>
                       </tr>
                     ))}

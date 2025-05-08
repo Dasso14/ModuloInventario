@@ -208,24 +208,20 @@ export default function TransactionHistoryReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Map over the fetched transactions */}
                     {transactions.map(tx => (
                       // Use a unique key, like transaction_id
-                      <tr key={tx.transaction_id}>
-                        {/* Access properties directly from the API response data */}
-                        <td>{tx.transaction_date ? new Date(tx.transaction_date).toLocaleString() : 'N/A'}</td> {/* Format date */}
+                      <tr key={tx.id}>
+                        <td>{tx.transaction_date ? new Date(tx.transaction_date).toLocaleString() : 'N/A'}</td> 
                          <td>
-                             {/* Display transaction type with badges */}
                              <span className={`badge ${tx.transaction_type === 'add' ? 'bg-success' : tx.transaction_type === 'remove' ? 'bg-danger' : tx.transaction_type === 'adjust' ? 'bg-warning' : 'bg-secondary'}`}>
-                                 {/* Display user-friendly type names */}
                                  {tx.transaction_type === 'add' ? 'Entrada' : tx.transaction_type === 'remove' ? 'Salida' : tx.transaction_type === 'adjust' ? 'Ajuste' : tx.transaction_type}
                             </span>
                         </td>
-                        <td>{tx.product_name}</td> {/* Assuming API returns product_name */}
-                        <td>{tx.location_name}</td> {/* Assuming API returns location_name */}
+                        <td>{tx.product_name}</td> 
+                        <td>{tx.location_name}</td> 
                         <td>{tx.quantity}</td>
                         <td>{tx.reference_number || 'N/A'}</td>
-                        <td>{tx.user_username}</td> {/* Assuming API returns user_username */}
+                        <td>{tx.user_username}</td> 
                         <td>{tx.notes || 'N/A'}</td>
                       </tr>
                     ))}

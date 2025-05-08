@@ -3,34 +3,14 @@ from flask import Blueprint, request, jsonify
 # Import your backend service layers for reports
 from ..services.report_service import ReportService
 # Removed imports for Marshmallow schemas
-
+from . import reports_bp
 from ..utils.exceptions import (
     NotFoundException, # Aunque ya no se usa NotFoundException en estas rutas
     DatabaseException,
     # Import other relevant exceptions from your utils
 )
 
-# Define the blueprint for report routes
-# The url_prefix='/api/reports' should be registered in app/__init__.py
-reports_bp = Blueprint('reports_bp', __name__, url_prefix='/api/reports')
 
-# IMPORTANT: CORS should typically be applied where the blueprint is registered,
-# NOT directly within the blueprint file itself.
-# In your main application file (e.g., app/__init__.py), you should do:
-#
-# from flask_cors import CORS
-# from .api.reports import reports_bp
-#
-# # ... your Flask app initialization ...
-#
-# # Apply CORS to the reports blueprint
-# CORS(reports_bp)
-#
-# # ... register the blueprint ...
-# app.register_blueprint(reports_bp)
-#
-# Or apply CORS to your entire app instance:
-# CORS(app)
 
 
 # Instantiate your service class

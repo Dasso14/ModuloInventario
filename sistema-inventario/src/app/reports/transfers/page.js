@@ -196,7 +196,7 @@ export default function LocationTransfersReportPage() {
                 <table className="table table-striped table-bordered table-hover table-sm">
                   <thead>
                     <tr>
-                      {/* Table headers - adjust based on actual data structure */}
+
                       <th>Fecha</th>
                       <th>Producto</th>
                       <th>Origen</th>
@@ -207,17 +207,16 @@ export default function LocationTransfersReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Map over the fetched transfers */}
+        
                     {transfers.map(transfer => (
                       // Use a unique key, like transfer_id
-                      <tr key={transfer.transfer_id}>
-                        {/* Access properties directly from the API response data */}
-                        <td>{transfer.transfer_date ? new Date(transfer.transfer_date).toLocaleString() : 'N/A'}</td> {/* Format date */}
-                        <td>{transfer.product_name}</td> {/* Assuming API returns product_name */}
-                        <td>{transfer.from_location_name}</td> {/* Assuming API returns from_location_name */}
-                        <td>{transfer.to_location_name}</td> {/* Assuming API returns to_location_name */}
+                      <tr key={transfer.id}>
+                        <td>{transfer.transfer_date ? new Date(transfer.transfer_date).toLocaleString() : 'N/A'}</td>
+                        <td>{transfer.product_name}</td> 
+                        <td>{transfer.from_location_name}</td> 
+                        <td>{transfer.to_location_name}</td> 
                         <td>{transfer.quantity}</td>
-                        <td>{transfer.user_username}</td> {/* Assuming API returns user_username */}
+                        <td>{transfer.user_username}</td>
                         <td>{transfer.notes || 'N/A'}</td>
                       </tr>
                     ))}
