@@ -24,13 +24,10 @@ def validate_date_param(param_value, param_name):
     if param_value is None:
         return None # Allow parameter to be optional
     try:
-        # Attempt to parse various ISO 8601 formats
-        # fromisoformat handles Z and offsets, and returns timezone-aware datetimes
-        dt_obj = datetime.fromisoformat(param_value.replace('Z', '+00:00'))
-        # Optional: Convert to UTC naive if your application prefers naive datetimes
-        # return dt_obj.replace(tzinfo=None) if dt_obj.tzinfo else dt_obj
-        return dt_obj # Keep timezone-aware as fromisoformat returns it
-    except (ValueError, TypeError):
+        if param_value.endswith('Z'):
+            param_value = param_value.replace('Z', '+00:00')
+        return datetime.fromisoformat(param_value)
+    except Exception:
         # Raised on invalid string format
         raise ValueError(f"Invalid {param_name} format")
 
@@ -43,7 +40,7 @@ def create_transfer():
     Registers a stock transfer between two locations.
     Expected JSON body: {"product_id": 1, "from_location_id": 1, "to_location_id": 2, "quantity": 5.0, "user_id": 1, "notes": "..."}
     """
-    data = request.get_json()
+    data = request.get_json(silent=True)
     # Check if data is None (failed parse) or not a dictionary (e.g., JSON array or primitive)
     if not isinstance(data, dict):
         return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
@@ -139,8 +136,11 @@ def list_transfers():
             sort_order = request.args.get('order', 'desc').lower()
             if sort_order not in ['asc', 'desc']:
                  return jsonify({'success': False, 'message': 'Invalid sort order. Use "asc" or "desc"'}), 400
-            sorting[sort_key] = sort_order
+            sorting = {'sortBy': sort_key, 'order': sort_order}
 
+        elif request.args.get('order'):
+            # Si hay `order` pero no `sortBy`, es inválido
+            return jsonify({'success': False, 'message': 'Sort order requires sortBy parameter'}), 400
         # Call the service with the prepared parameters
         transfers = transfer_service.get_all_transfers(filters=filters, pagination=pagination, sorting=sorting)
 
