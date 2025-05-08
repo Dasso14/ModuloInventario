@@ -110,49 +110,7 @@ export default function StockLevelsReportPage() {
         </Link>
       </div>
 
-       <div className="card mb-4"> {/* Increased bottom margin */}
-           <div className="card-body">
-               <h6 className="card-title">Filtros</h6>
-               {/* Example filter inputs - connect to state and update useEffect dependencies */}
-               <form className="row g-3">
-                   <div className="col-md-3">
-                       <label htmlFor="filterProduct" className="form-label">Producto</label>
-                        <select className="form-select form-select-sm" id="filterProduct"
-                           // value={filters.productId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, productId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todos los productos</option>
-                       </select>
-                   </div>
-                    <div className="col-md-3">
-                       <label htmlFor="filterLocation" className="form-label">Ubicación</label>
-                        <select className="form-select form-select-sm" id="filterLocation"
-                           // value={filters.locationId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, locationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las ubicaciones</option>
-                         
-                       </select>
-                   </div>
-                    <div className="col-md-3">
-                       <label htmlFor="filterCategory" className="form-label">Categoría</label>
-                        <select className="form-select form-select-sm" id="filterCategory"
-                           // value={filters.categoryId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, categoryId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las categorías</option>
-                     
-                       </select>
-                   </div>
-                    <div className="col-md-2 d-flex align-items-end"> {/* Align button to the bottom */}
-                       <button type="button" className="btn btn-primary btn-sm w-100"
-                           // onClick={() => { /* Trigger fetch by updating filter state */ }}
-                           disabled // Disable until filter logic is implemented
-                       >Aplicar Filtros</button>
-                   </div>
-               </form>
-           </div>
-       </div>
+       
 
       {stockLevels.length === 0 ? (
            <div className="alert alert-info text-center" role="alert"> {/* Added role="alert" */}

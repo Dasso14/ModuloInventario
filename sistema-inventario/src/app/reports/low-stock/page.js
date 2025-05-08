@@ -110,46 +110,6 @@ export default function LowStockReportPage() {
         </Link>
       </div>
 
-       {/* Placeholder for Filters (Implement filter UI and state updates here) */}
-       <div className="card mb-4"> {/* Increased bottom margin */}
-           <div className="card-body">
-               <h6 className="card-title">Filtros</h6>
-               {/* Example filter input - connect to state and update useEffect dependencies */}
-               <div className="row g-3">
-                   <div className="col-md-4">
-                       <label htmlFor="filterLocation" className="form-label">Ubicación</label>
-                       <select className="form-select form-select-sm" id="filterLocation"
-                           // value={filters.locationId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, locationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las ubicaciones</option>
-                           {/* Map your locations data here */}
-                           {/* {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)} */}
-                       </select>
-                   </div>
-                    <div className="col-md-4">
-                       <label htmlFor="filterCategory" className="form-label">Categoría</label>
-                        <select className="form-select form-select-sm" id="filterCategory"
-                           // value={filters.categoryId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, categoryId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las categorías</option>
-                           {/* Map your categories data here */}
-                           {/* {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)} */}
-                       </select>
-                   </div>
-                    {/* Add other filters (Supplier, etc.) */}
-                    <div className="col-md-2 d-flex align-items-end"> {/* Align button to the bottom */}
-                       {/* Filter button - onClick should trigger filter state update */}
-                       <button type="button" className="btn btn-primary btn-sm w-100"
-                           // onClick={() => { /* Trigger fetch by updating filter state */ }}
-                           disabled // Disable until filter logic is implemented
-                       >Aplicar Filtros</button>
-                   </div>
-               </div>
-           </div>
-       </div>
-
 
       {/* Display the report data */}
       {lowStockItems.length === 0 ? (

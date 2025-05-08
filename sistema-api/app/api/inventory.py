@@ -23,18 +23,34 @@ inventory_service = InventoryService()
 @inventory_bp.route('/add', methods=['POST','OPTIONS'])
 def add_stock():
     """POST /api/inventory/add - Registers an inventory addition."""
+
+    # --- NUEVA LÓGICA PARA MANEJAR SOLICITUDES OPTIONS ---
+    if request.method == 'OPTIONS':
+        # Flask-CORS debería manejar esto automáticamente si está configurado
+        # Pero si por alguna razón no lo hace, puedes añadir headers aquí manualmente
+        # Sin embargo, con Flask-CORS bien configurado, simplemente retornar 200 OK
+        # es suficiente, ya que Flask-CORS inyectará los headers.
+        response = jsonify({'message': 'Preflight request successful'}) # Cuerpo es opcional para OPTIONS 200
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000') # <-- Ejemplo, Flask-CORS lo hace
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization') # <-- Ejemplo
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS') # <-- Ejemplo
+        # Añadir otros headers necesarios si no usas Flask-CORS globalmente
+        return response, 200
+    # --- FIN LÓGICA OPTIONS ---
+
+    # --- LÓGICA EXISTENTE PARA MANEJAR SOLICITUDES POST ---
+    # Esta parte SOLO se ejecuta si request.method es 'POST'
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
 
     # Validate required fields
     required_fields = ['product_id', 'location_id', 'quantity', 'user_id']
-    # Also check that the values are not None if they are required
     if not all(field in data and data[field] is not None for field in required_fields):
          return jsonify({'success': False, 'message': f'Missing or null required fields: {", ".join(required_fields)}'}), 400
 
     try:
-        # Ensure quantity is a positive number and can be converted to float
+        # Ensure quantity is a positive number
         try:
             quantity = float(data['quantity'])
         except (ValueError, TypeError):
@@ -51,36 +67,47 @@ def add_stock():
             'user_id': data['user_id'],
             'reference_number': data.get('reference_number'), # Optional field
             'notes': data.get('notes'), # Optional field
-            'transaction_type': 'add' # Explicitly set type for the service
+            'transaction_type': 'entrada' # Explicitly set type for the service
         }
 
-        # Call the service to create the transaction and update stock levels
-        # Assuming inventory_service.create_inventory_transaction handles the DB logic
+        # Call the service
         new_transaction = inventory_service.create_inventory_transaction(transaction_data)
 
         # Return success response
         return jsonify({
             'success': True,
             'message': 'Stock added successfully',
-            'transaction_id': new_transaction.id, # Assuming the service returns the created object with an ID
-            'data': new_transaction.to_dict() # Assuming your model/service returns a dict representation
-            }), 201 # 201 Created
+            'transaction_id': new_transaction.id,
+            'data': new_transaction.to_dict()
+            }), 201
 
     except NotFoundException as e:
-        # Handle cases where product_id, location_id, or user_id do not exist
         return jsonify({'success': False, 'message': str(e)}), 404
     except DatabaseException as e:
-         # Handle database errors
-         print(f"Database error during add_stock: {e}") # Log the error server-side
+         print(f"Database error during add_stock: {e}")
          return jsonify({'success': False, 'message': 'Database error occurred during stock addition'}), 500
     except Exception as e:
-        # Catch any other unexpected errors
-        print(f"An unexpected error occurred in add_stock: {e}") # Log the error server-side
+        print(f"An unexpected error occurred in add_stock: {e}")
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
 @inventory_bp.route('/adjust', methods=['POST','OPTIONS'])
 def adjust_stock():
+
+        # --- NUEVA LÓGICA PARA MANEJAR SOLICITUDES OPTIONS ---
+    if request.method == 'OPTIONS':
+        # Flask-CORS debería manejar esto automáticamente si está configurado
+        # Pero si por alguna razón no lo hace, puedes añadir headers aquí manualmente
+        # Sin embargo, con Flask-CORS bien configurado, simplemente retornar 200 OK
+        # es suficiente, ya que Flask-CORS inyectará los headers.
+        response = jsonify({'message': 'Preflight request successful'}) # Cuerpo es opcional para OPTIONS 200
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000') # <-- Ejemplo, Flask-CORS lo hace
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization') # <-- Ejemplo
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS') # <-- Ejemplo
+        # Añadir otros headers necesarios si no usas Flask-CORS globalmente
+        return response, 200
+    # --- FIN LÓGICA OPTIONS ---
+
     """POST /api/inventory/adjust - Registers an inventory adjustment."""
     data = request.get_json()
     if not data:
@@ -114,7 +141,7 @@ def adjust_stock():
             'user_id': data['user_id'],
             'reference_number': data.get('reference_number'), # Optional field
             'notes': data['notes'], # Notes are mandatory here
-            'transaction_type': 'adjust' # Explicitly set type for the service
+            'transaction_type': 'ajuste' # Explicitly set type for the service
         }
 
         # Call the service to create the transaction and update stock levels
@@ -151,6 +178,22 @@ def adjust_stock():
 
 @inventory_bp.route('/remove', methods=['POST','OPTIONS'])
 def remove_stock():
+
+        # --- NUEVA LÓGICA PARA MANEJAR SOLICITUDES OPTIONS ---
+    if request.method == 'OPTIONS':
+        # Flask-CORS debería manejar esto automáticamente si está configurado
+        # Pero si por alguna razón no lo hace, puedes añadir headers aquí manualmente
+        # Sin embargo, con Flask-CORS bien configurado, simplemente retornar 200 OK
+        # es suficiente, ya que Flask-CORS inyectará los headers.
+        response = jsonify({'message': 'Preflight request successful'}) # Cuerpo es opcional para OPTIONS 200
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000') # <-- Ejemplo, Flask-CORS lo hace
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization') # <-- Ejemplo
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS') # <-- Ejemplo
+        # Añadir otros headers necesarios si no usas Flask-CORS globalmente
+        return response, 200
+    # --- FIN LÓGICA OPTIONS ---
+
+
     """POST /api/inventory/remove - Registers an inventory removal."""
     data = request.get_json()
     if not data:
@@ -179,7 +222,7 @@ def remove_stock():
             'user_id': data['user_id'],
             'reference_number': data.get('reference_number'), # Optional field
             'notes': data.get('notes'), # Optional field
-            'transaction_type': 'remove' # Explicitly set type for the service
+            'transaction_type': 'salida' # Explicitly set type for the service
         }
 
         # Call the service to create the transaction and update stock levels
@@ -210,6 +253,21 @@ def remove_stock():
 
 @inventory_bp.route('/transfer', methods=['POST','OPTIONS'])
 def transfer_stock():
+
+        # --- NUEVA LÓGICA PARA MANEJAR SOLICITUDES OPTIONS ---
+    if request.method == 'OPTIONS':
+        # Flask-CORS debería manejar esto automáticamente si está configurado
+        # Pero si por alguna razón no lo hace, puedes añadir headers aquí manualmente
+        # Sin embargo, con Flask-CORS bien configurado, simplemente retornar 200 OK
+        # es suficiente, ya que Flask-CORS inyectará los headers.
+        response = jsonify({'message': 'Preflight request successful'}) # Cuerpo es opcional para OPTIONS 200
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000') # <-- Ejemplo, Flask-CORS lo hace
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization') # <-- Ejemplo
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS') # <-- Ejemplo
+        # Añadir otros headers necesarios si no usas Flask-CORS globalmente
+        return response, 200
+    # --- FIN LÓGICA OPTIONS ---
+
     """POST /api/inventory/transfer - Registers a stock transfer."""
     data = request.get_json()
     if not data:

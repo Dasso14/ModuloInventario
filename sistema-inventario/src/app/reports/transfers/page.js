@@ -121,71 +121,7 @@ export default function LocationTransfersReportPage() {
         </Link>
       </div>
 
-       {/* Placeholder for Filters (Implement filter UI and state updates here) */}
-        <div className="card mb-4"> {/* Increased bottom margin */}
-            <div className="card-body">
-                <h6 className="card-title">Filtros</h6>
-                 {/* Example filter inputs - connect to state and update useEffect dependencies */}
-                <form className="row g-3">
-                   <div className="col-md-3">
-                       <label htmlFor="filterProduct" className="form-label">Producto</label>
-                        <select className="form-select form-select-sm" id="filterProduct"
-                           // value={filters.productId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, productId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todos los productos</option>
-                           {/* Map your products data here */}
-                           {/* {products.map(prod => <option key={prod.id} value={prod.id}>{prod.sku} - {prod.name}</option>)} */}
-                       </select>
-                   </div>
-                    <div className="col-md-3">
-                       <label htmlFor="filterFromLocation" className="form-label">Origen</label>
-                        <select className="form-select form-select-sm" id="filterFromLocation"
-                           // value={filters.fromLocationId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, fromLocationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las ubicaciones de origen</option>
-                           {/* Map your locations data here */}
-                           {/* {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)} */}
-                       </select>
-                   </div>
-                    <div className="col-md-3">
-                       <label htmlFor="filterToLocation" className="form-label">Destino</label>
-                        <select className="form-select form-select-sm" id="filterToLocation"
-                           // value={filters.toLocationId || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, toLocationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
-                       >
-                           <option value="">Todas las ubicaciones de destino</option>
-                           {/* Map your locations data here */}
-                           {/* {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)} */}
-                       </select>
-                   </div>
-                     <div className="col-md-2">
-                       <label htmlFor="filterStartDate" className="form-label">Fecha Desde</label>
-                       <input type="date" className="form-control form-control-sm" id="filterStartDate"
-                           // value={filters.startDate || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, startDate: e.target.value || null})} // Update state
-                       />
-                   </div>
-                    <div className="col-md-2">
-                       <label htmlFor="filterEndDate" className="form-label">Fecha Hasta</label>
-                       <input type="date" className="form-control form-control-sm" id="filterEndDate"
-                           // value={filters.endDate || ''} // Connect to state
-                           // onChange={(e) => setFilters({...filters, endDate: e.target.value || null})} // Update state
-                       />
-                   </div>
-                    <div className="col-md-2 d-flex align-items-end"> {/* Align button to the bottom */}
-                       {/* Filter button - onClick should trigger filter state update */}
-                       <button type="button" className="btn btn-primary btn-sm w-100"
-                           // onClick={() => { /* Trigger fetch by updating filter state */ }}
-                           disabled // Disable until filter logic is implemented
-                       >Aplicar Filtros</button>
-                   </div>
-               </form>
-            </div>
-        </div>
-
-
+      
       {/* Display the report data */}
       {transfers.length === 0 ? (
            <div className="alert alert-info text-center" role="alert">
