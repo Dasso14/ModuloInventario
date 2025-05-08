@@ -2,12 +2,13 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // Importar useRouter
 import Link from 'next/link';
-import { getSupplierById } from '../../../../lib/product-data'; // Ajusta la ruta si es necesario
+// Importamos las funciones del nuevo servicio
+import { getSupplierById, deleteSupplier } from '../../../services/supplierService'; // Ajusta la ruta si es necesario
 
 export default function SupplierDetailPage() {
-  const router = useRouter();
+  const router = useRouter(); // Inicializar useRouter
   const params = useParams();
   const supplierId = params.id ? parseInt(params.id, 10) : null;
 
@@ -17,65 +18,64 @@ export default function SupplierDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    if (supplierId !== null && !isNaN(supplierId)) {
-      setLoading(true);
-      setError(null);
-      
-      // Realizar petición a la API real
-      fetch(`/api/suppliers/${supplierId}`)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error(`Error: ${res.status} - ${res.statusText}`);
-          }
-          return res.json();
-        })
-        .then(response => {
-          if (response.success) {
-            setSupplier(response.data);
+    const fetchSupplier = async () => {
+      if (supplierId !== null && !isNaN(supplierId)) {
+        setLoading(true);
+        setError(null);
+        try {
+          // Usar la función del servicio para obtener el proveedor
+          const result = await getSupplierById(supplierId);
+
+          // Asumiendo que el servicio devuelve { success: true, data: {...} }
+          if (result && result.success) {
+            setSupplier(result.data);
           } else {
-            throw new Error(response.message || 'Error al obtener datos del proveedor');
+            // Manejar caso donde success es false o no se encuentra el proveedor
+            setError(result?.message || `Proveedor con ID ${supplierId} no encontrado.`);
           }
+        } catch (err) {
+          // Manejar errores de red o del servicio
+          setError(`Error al cargar proveedor: ${err.message}`);
+        } finally {
           setLoading(false);
-        })
-        .catch(err => {
-          setError(err.message);
-          setLoading(false);
-        });
-    } else {
-      setError("ID de proveedor inválido en la URL.");
-      setLoading(false);
-    }
-  }, [supplierId]);
+        }
+      } else {
+        setError("ID de proveedor inválido en la URL.");
+        setLoading(false);
+      }
+    };
+
+    fetchSupplier();
+  }, [supplierId]); // Dependencia: recargar si cambia el ID en la URL
 
   const handleDeleteSupplier = () => {
     // Mostrar confirmación antes de eliminar
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     setLoading(true);
-    fetch(`/api/suppliers/${supplierId}`, {
-      method: 'DELETE',
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Error: ${res.status} - ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(response => {
-        if (response.success) {
-          // Redireccionar a la lista de proveedores tras eliminar
-          router.push('/suppliers');
-        } else {
-          throw new Error(response.message || 'Error al eliminar el proveedor');
-        }
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-        setShowDeleteConfirm(false);
-      });
+    setShowDeleteConfirm(false); // Ocultar el cuadro de confirmación al iniciar la eliminación
+
+    try {
+      // Usar la función del servicio para eliminar el proveedor
+      const result = await deleteSupplier(supplierId);
+
+      // Asumiendo que el servicio devuelve { success: true, message: "..." }
+      if (result && result.success) {
+        console.log('Proveedor eliminado exitosamente', result.message);
+        // Redireccionar a la lista de proveedores tras eliminar
+        router.push('/suppliers');
+      } else {
+        // Manejar caso donde success es false
+        setError(result?.message || 'Error al eliminar el proveedor.');
+      }
+    } catch (err) {
+      // Manejar errores de red o del servicio
+      setError(`Error en la comunicación con el servidor al eliminar: ${err.message}`);
+    } finally {
+      setLoading(false); // Ocultar estado de carga
+    }
   };
 
   const cancelDelete = () => {
@@ -88,7 +88,7 @@ export default function SupplierDetailPage() {
         <div className="spinner-border" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
-        <p className="mt-2">Cargando datos del proveedor...</p>
+        <p className="mt-2">{showDeleteConfirm ? 'Eliminando proveedor...' : 'Cargando datos del proveedor...'}</p> {/* Mensaje más específico */}
       </div>
     );
   }
@@ -107,6 +107,8 @@ export default function SupplierDetailPage() {
   }
 
   if (!supplier) {
+    // Este caso debería ser cubierto por el error al no encontrar el proveedor,
+    // pero lo mantenemos como fallback.
     return (
       <div className="alert alert-warning">
         <h4 className="alert-heading">Proveedor no disponible</h4>
@@ -127,15 +129,16 @@ export default function SupplierDetailPage() {
           <Link href={`/suppliers/${supplierId}/edit`} passHref>
             <button type="button" className="btn btn-warning me-2">Editar</button>
           </Link>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn btn-danger me-2"
             onClick={handleDeleteSupplier}
+            disabled={loading} // Deshabilitar botón mientras carga
           >
             Eliminar
           </button>
           <Link href="/suppliers" passHref>
-            <button type="button" className="btn btn-secondary">Volver a la Lista</button>
+            <button type="button" className="btn btn-secondary" disabled={loading}>Volver a la Lista</button> {/* Deshabilitar botón mientras carga */}
           </Link>
         </div>
       </div>
@@ -145,8 +148,8 @@ export default function SupplierDetailPage() {
           <h5>¿Está seguro que desea eliminar este proveedor?</h5>
           <p>Esta acción no se puede deshacer. Si el proveedor tiene productos asociados, no podrá ser eliminado.</p>
           <div className="d-flex gap-2">
-            <button className="btn btn-danger" onClick={confirmDelete}>Confirmar Eliminación</button>
-            <button className="btn btn-secondary" onClick={cancelDelete}>Cancelar</button>
+            <button className="btn btn-danger" onClick={confirmDelete} disabled={loading}>Confirmar Eliminación</button> {/* Deshabilitar mientras elimina */}
+            <button className="btn btn-secondary" onClick={cancelDelete} disabled={loading}>Cancelar</button> {/* Deshabilitar mientras elimina */}
           </div>
         </div>
       )}
@@ -156,7 +159,7 @@ export default function SupplierDetailPage() {
           <h5 className="card-title">Información General</h5>
           <div className="row">
             <div className="col-md-6">
-              <p><strong>ID:</strong> {supplier.id}</p>
+              <p><strong>ID:</strong> {supplier.id}</p> {/* Asegúrate de usar supplier.id si es el nombre de la propiedad */}
               <p><strong>Nombre:</strong> {supplier.name}</p>
               <p><strong>Nombre de Contacto:</strong> {supplier.contact_name || 'N/A'}</p>
             </div>
@@ -181,7 +184,8 @@ export default function SupplierDetailPage() {
           <h5 className="mb-0">Productos Suministrados</h5>
         </div>
         <div className="card-body">
-          {supplier.products && supplier.products.length > 0 ? (
+          {/* Asumiendo que la API devuelve una propiedad 'products' que es un array */}
+          {supplier.products && Array.isArray(supplier.products) && supplier.products.length > 0 ? (
             <div className="table-responsive">
               <table className="table table-striped">
                 <thead>
@@ -197,8 +201,8 @@ export default function SupplierDetailPage() {
                   {supplier.products.map(product => (
                     <tr key={product.id}>
                       <td>{product.id}</td>
-                      <td>{product.name}</td>
-                      <td>${product.price.toFixed(2)}</td>
+                      <td>${product.name}</td> {/* Corregido: Usar product.name */}
+                      <td>${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</td> {/* Asegurar formato de precio */}
                       <td>{product.stock}</td>
                       <td>
                         <Link href={`/products/${product.id}`} passHref>

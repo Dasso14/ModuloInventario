@@ -12,7 +12,6 @@ export default function EditCategoryPage() {
   const params = useParams();
   // Ensure categoryId is a number, handle potential null/undefined from params
   const categoryId = params.id ? parseInt(params.id, 10) : null;
-
   const [category, setCategory] = useState(undefined); // Stores original fetched data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

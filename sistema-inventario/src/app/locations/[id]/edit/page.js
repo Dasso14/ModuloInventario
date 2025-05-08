@@ -4,72 +4,101 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getLocationById, getLocations } from '../../../../../lib/product-data'; // Ajusta la ruta si es necesario
+// Adjust the import path based on where locationsService.js is relative to this file
+// Assuming service is in app/services
+import { getLocationById, getAllLocations, updateLocation } from '../../../../services/locationService';
 
 export default function EditLocationPage() {
   const router = useRouter();
   const params = useParams();
+  // Ensure locationId is a number, handle potential string from URL
   const locationId = params.id ? parseInt(params.id, 10) : null;
 
-  const [location, setLocation] = useState(undefined); // Almacena los datos originales
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [availableParents, setAvailableParents] = useState([]); // Lista de ubicaciones para seleccionar como padre
+  const [location, setLocation] = useState(undefined); // Stores the original location data
+  const [loading, setLoading] = useState(true); // Loading state for initial data fetch
+  const [error, setError] = useState(null); // Error state for initial data fetch
+  const [availableParents, setAvailableParents] = useState([]); // List of locations for parent select
+  const [loadingParents, setLoadingParents] = useState(true); // Loading state for parents dropdown
 
-  // Estado para el formulario
+  // State for the form data
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
-    parent_location: '',
-    storage_capacity: '',
+    // Changed from address to description
     description: '',
+    parent_location: '', // Use string empty for the select value (will store parent ID or empty string)
+    storage_capacity: '',
     is_active: true,
   });
-   const [formError, setFormError] = useState('');
+   const [formError, setFormError] = useState(''); // Error state for form submission
+   const [submitting, setSubmitting] = useState(false); // State to prevent double submission
 
 
   useEffect(() => {
+    // Check if locationId is a valid number before fetching
     if (locationId !== null && !isNaN(locationId)) {
-      setLoading(true);
-      setError(null);
+      const fetchData = async () => {
+        setLoading(true);
+        setError(null); // Clear previous errors
 
-      // Cargar datos de la ubicación a editar
-      const foundLocation = getLocationById(locationId);
+        try {
+          // Fetch the location data to edit
+          const locationResponse = await getLocationById(locationId);
 
-      if (foundLocation) {
-          setLocation(foundLocation);
-          // Precargar el formulario
-          setFormData({
-            name: foundLocation.name,
-            address: foundLocation.address || '',
-            parent_location: foundLocation.parent_location ? foundLocation.parent_location.toString() : '', // string para select
-            storage_capacity: foundLocation.storage_capacity !== undefined && foundLocation.storage_capacity !== null ? foundLocation.storage_capacity.toString() : '', // string para input
-            description: foundLocation.description || '',
-            is_active: foundLocation.is_active,
-          });
-           setLoading(false);
-      } else {
-           setError(`Ubicación con ID ${locationId} no encontrada.`);
-           setLoading(false);
-      }
+          if (locationResponse.success) {
+              const foundLocation = locationResponse.data;
+              setLocation(foundLocation);
+              // Pre-populate the form with fetched data
+              setFormData({
+                name: foundLocation.name,
+                // Changed from address to description
+                description: foundLocation.description || '',
+                // Set parent_location state to the parent's ID as a string, or '' if no parent
+                parent_location: foundLocation.parent_location ? foundLocation.parent_location.id.toString() : '',
+                // Convert storage_capacity to string for input, handle null/undefined
+                storage_capacity: foundLocation.storage_capacity !== undefined && foundLocation.storage_capacity !== null ? foundLocation.storage_capacity.toString() : '',
+                is_active: foundLocation.is_active,
+              });
+          } else {
+               setError(locationResponse.message || `Failed to fetch location with ID ${locationId}`);
+               setLocation(undefined); // Clear location data on error
+          }
 
-      // Cargar ubicaciones disponibles para seleccionar como padre (excluir la ubicación actual)
-      const locations = getLocations().filter(loc => loc.location_id !== locationId);
-      setAvailableParents(locations);
+          // Fetch available locations for the parent dropdown (excluding the current location)
+          setLoadingParents(true); // Start loading for parents
+          const parentsResponse = await getAllLocations(); // Fetch all locations
 
-      // En un sistema real:
-      // fetch(`/api/locations/${locationId}`).then(...)
-      // fetch('/api/locations').then(...).then(allLocs => setAvailableParents(allLocs.filter(...)))
+          if (parentsResponse.success) {
+              // Filter out the current location itself from the parent options
+              const filteredParents = parentsResponse.data.filter(loc => loc.id !== locationId);
+              setAvailableParents(filteredParents);
+          } else {
+              console.error("Failed to fetch parent locations:", parentsResponse.message);
+              // Optionally set an error specific to parent fetching, or just log
+          }
+
+        } catch (err) {
+             console.error(`Error fetching data for location ${locationId}:`, err);
+             setError(`An error occurred while fetching data for location ID ${locationId}.`);
+             setLocation(undefined); // Clear location data on error
+        } finally {
+            setLoading(false); // Always set main loading to false
+            setLoadingParents(false); // Always set parents loading to false
+        }
+      };
+
+      fetchData();
     } else {
+         // Handle cases where the ID in the URL is invalid
          setError("ID de ubicación inválido en la URL.");
          setLoading(false);
+         setLocation(undefined); // Ensure location is undefined for invalid ID
     }
-  }, [locationId]);
+  }, [locationId]); // Effect depends on locationId changes
 
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-     // Manejar checkbox
+     // Handle checkbox
      if (type === 'checkbox') {
          setFormData(prevState => ({
             ...prevState,
@@ -81,17 +110,22 @@ export default function EditLocationPage() {
           [name]: value,
         }));
      }
-    setFormError('');
+    setFormError(''); // Clear form error on input change
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // Made function async
     e.preventDefault();
-    setFormError('');
 
-     const capacityValue = parseFloat(formData.storage_capacity);
+    if (submitting) return; // Prevent multiple submissions
 
-    // --- Validación simple ---
-    if (!formData.name) {
+    setFormError(''); // Clear previous form errors
+
+     const capacityValue = formData.storage_capacity === '' ? null : parseFloat(formData.storage_capacity);
+     const parentIdValue = formData.parent_location === '' ? null : parseInt(formData.parent_location, 10);
+
+
+    // --- Simple Validation ---
+    if (!formData.name || formData.name.trim() === '') {
         setFormError('El nombre de la ubicación es obligatorio.');
         return;
     }
@@ -99,33 +133,50 @@ export default function EditLocationPage() {
          setFormError('La capacidad de almacenamiento debe ser un número positivo.');
          return;
      }
-     if (formData.parent_location && parseInt(formData.parent_location, 10) === locationId) { // Doble check por si acaso
+     // Check if the selected parent ID is the same as the current location ID
+     if (parentIdValue !== null && parentIdValue === locationId) {
           setFormError('Una ubicación no puede ser padre de sí misma.');
           return;
      }
-    // --- Fin Validación simple ---
+    // Add more validation if needed (e.g., description length)
+    // --- End Simple Validation ---
 
+    setSubmitting(true); // Disable button and inputs
 
-    console.log(`Datos a actualizar para ubicación ID ${locationId}:`, formData);
-    // Lógica para enviar los datos actualizados a tu API
-    // fetch(`/api/locations/${locationId}`, {
-    //    method: 'PUT',
-    //    headers: { 'Content-Type': 'application/json' },
-    //    body: JSON.stringify({
-    //      ...formData,
-    //      parent_location: formData.parent_location === '' ? null : parseInt(formData.parent_location, 10),
-    //      storage_capacity: formData.storage_capacity === '' ? null : capacityValue
-    //    }),
-    // })
-    // .then(...)
+    const dataToSend = {
+       name: formData.name.trim(), // Trim whitespace
+       // Changed from address to description
+       description: formData.description,
+       // API expects parent_id, not parent_location
+       parent_id: parentIdValue,
+       storage_capacity: capacityValue,
+       is_active: formData.is_active,
+    };
 
+    console.log(`Datos a actualizar para ubicación ID ${locationId}:`, dataToSend);
 
-    alert(`Ubicación ${location?.name} actualizada (simulado)`); // Simulación
-    router.push(`/locations/${locationId}`); // Redirigir a los detalles
+    try {
+       // Call the service function to update the location
+       const response = await updateLocation(locationId, dataToSend);
+
+       // Assuming response is { success: true, message: '...', data: {...} } or { success: false, message: '...' }
+       if (response.success) {
+           alert(`Ubicación ${response.data.name} actualizada exitosamente!`); // Use a more sophisticated notification
+           router.push(`/locations/${locationId}`); // Redirect to the details page
+       } else {
+           // Handle API errors (e.g., validation errors, conflict)
+           setFormError(response.message || 'Error al actualizar la ubicación.');
+       }
+    } catch (err) {
+       console.error(`Error updating location ${locationId}:`, err);
+       setFormError('Ocurrió un error al intentar actualizar la ubicación.'); // Generic error for unexpected issues
+    } finally {
+        setSubmitting(false); // Re-enable the submit button
+    }
   };
 
     if (loading) {
-        return <div className="text-center">Cargando...</div>;
+        return <div className="text-center">Cargando datos de la ubicación...</div>;
     }
 
     if (error) {
@@ -133,7 +184,7 @@ export default function EditLocationPage() {
     }
 
      if (!location) {
-        return <div className="alert alert-warning">Ubicación no disponible para editar.</div>;
+        return <div className="alert alert-warning text-center">Ubicación no disponible para editar.</div>;
     }
 
 
@@ -141,7 +192,8 @@ export default function EditLocationPage() {
      <>
         <div className="d-flex justify-content-between align-items-center mb-3">
             <h1>Editar Ubicación: {location.name}</h1>
-            <Link href={`/locations/${location.location_id}`} passHref >
+            {/* Use location.id for the cancel link */}
+            <Link href={`/locations/${location.id}`} passHref >
                  <button type="button" className="btn btn-secondary">Cancelar</button>
             </Link>
         </div>
@@ -152,39 +204,76 @@ export default function EditLocationPage() {
                 <form onSubmit={handleSubmit}>
                      <div className="mb-3">
                         <label htmlFor="nameInput" className="form-label">Nombre de la Ubicación</label>
-                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />
+                        <input
+                           type="text"
+                           className="form-control"
+                           id="nameInput"
+                           name="name"
+                           value={formData.name}
+                           onChange={handleChange}
+                           required
+                           maxLength="255"
+                           disabled={submitting} // Disable input while submitting
+                        />
                     </div>
 
                      <div className="mb-3">
-                        <label htmlFor="addressTextarea" className="form-label">Dirección</label>
-                        <textarea className="form-control" id="addressTextarea" rows="3" name="address" value={formData.address} onChange={handleChange}></textarea>
+                        {/* Changed label and name from address to description */}
+                        <label htmlFor="descriptionTextarea" className="form-label">Descripción</label>
+                        <textarea
+                           className="form-control"
+                           id="descriptionTextarea"
+                           rows="3"
+                           name="description" // Changed name
+                           value={formData.description} // Changed value
+                           onChange={handleChange}
+                           disabled={submitting} // Disable input while submitting
+                        ></textarea>
                     </div>
 
                      <div className="row g-3 mb-3">
                          <div className="col-md-6">
                             <label htmlFor="parentSelect" className="form-label">Ubicación Padre (Opcional)</label>
-                            <select
-                                className="form-select"
-                                id="parentSelect"
-                                name="parent_location"
-                                value={formData.parent_location}
-                                onChange={handleChange}
-                            >
-                                <option value="">Sin Ubicación Padre</option>
-                                {/* Mapear las ubicaciones disponibles. Asegurarse de que la ubicación actual no aparezca como opción padre */}
-                                {availableParents.map(parentLoc => (
-                                    <option key={parentLoc.location_id} value={parentLoc.location_id}>
-                                        {parentLoc.name}
-                                    </option>
-                                ))}
-                            </select>
+                             {loadingParents ? (
+                                 <select className="form-select" disabled>
+                                     <option>Cargando ubicaciones...</option>
+                                 </select>
+                             ) : (
+                                <select
+                                    className="form-select"
+                                    id="parentSelect"
+                                    name="parent_location" // Corresponds to state key
+                                    value={formData.parent_location}
+                                    onChange={handleChange}
+                                    disabled={submitting} // Disable input while submitting
+                                >
+                                    <option value="">Sin Ubicación Padre</option>
+                                    {/* Mapear las ubicaciones disponibles. Ensure the current location is not an option */}
+                                    {availableParents.map(parentLoc => (
+                                        // Use parentLoc.id here
+                                        <option key={parentLoc.id} value={parentLoc.id}>
+                                            {parentLoc.name}
+                                        </option>
+                                    ))}
+                                </select>
+                             )}
                              <div className="form-text">
                                Seleccione una ubicación si esta es una sub-ubicación. No se puede seleccionar a sí misma.
                             </div>
                         </div>
                          <div className="col-md-6">
                             <label htmlFor="capacityInput" className="form-label">Capacidad de Almacenamiento (Opcional)</label>
-                            <input type="number" step="0.01" className="form-control" id="capacityInput" name="storage_capacity" value={formData.storage_capacity} onChange={handleChange} min="0" />
+                            <input
+                               type="number"
+                               step="0.01"
+                               className="form-control"
+                               id="capacityInput"
+                               name="storage_capacity"
+                               value={formData.storage_capacity}
+                               onChange={handleChange}
+                               min="0"
+                               disabled={submitting} // Disable input while submitting
+                             />
                              <div className="form-text">
                                Capacidad en unidades o medida relevante.
                             </div>
@@ -201,6 +290,7 @@ export default function EditLocationPage() {
                                 name="is_active"
                                 checked={formData.is_active}
                                 onChange={handleChange}
+                                disabled={submitting} // Disable input while submitting
                             />
                             <label className="form-check-label" htmlFor="isActiveCheck">
                                 Ubicación Activa
@@ -209,8 +299,8 @@ export default function EditLocationPage() {
                     </div>
 
 
-                    <button type="submit" className="btn btn-primary">
-                        Actualizar Ubicación
+                    <button type="submit" className="btn btn-primary" disabled={submitting}>
+                        {submitting ? 'Actualizando...' : 'Actualizar Ubicación'}
                     </button>
                 </form>
             </div>

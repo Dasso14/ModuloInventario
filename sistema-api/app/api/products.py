@@ -190,3 +190,29 @@ def delete_product(product_id):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
+
+# --- NEW ENDPOINT FOR STOCK LEVELS BY PRODUCT ---
+@products_bp.route('/<int:product_id>/stock-levels', methods=['GET'])
+def list_product_stock_levels(product_id):
+    """GET /api/products/{product_id}/stock-levels - Lists stock levels for a specific product."""
+    try:
+        # Call the service method to get stock levels for the product
+        stock_levels = product_service.get_stock_levels_by_product_id(product_id)
+
+        # Convert StockLevel objects to dictionaries
+        stock_levels_data = [sl.to_dict() for sl in stock_levels]
+
+        return jsonify({
+            'success': True,
+            'data': stock_levels_data
+        }), 200
+
+    except NotFoundException as e:
+        # This exception is raised by the service if the product_id is invalid
+        return jsonify({'success': False, 'message': str(e)}), 404
+    except DatabaseException as e:
+         return jsonify({'success': False, 'message': str(e)}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred in list_product_stock_levels: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
+# --- END NEW ENDPOINT ---

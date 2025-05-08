@@ -1,51 +1,96 @@
-// app/services/locationService.js
-import { fetchApi } from './api';
+// inventory_api/app/services/locationsService.js
+import { fetchApi } from './api'; // Assuming fetchApi is in './api.js' or similar
 
-// List all locations
-export const getAllLocations = async () => {
-  // Calls GET /api/locations
-  // Your Flask endpoint should handle optional filters, pagination, sorting
-  return fetchApi('/locations');
+
+const buildQueryString = (filters = {}, pagination = {}, sorting = {}) => {
+  const params = new URLSearchParams();
+
+  // Add filters
+  for (const key in filters) {
+    if (filters.hasOwnProperty(key) && filters[key] !== undefined) {
+      if (key === 'is_active') {
+         params.append(key, filters[key] ? 'true' : 'false');
+      } else if (key === 'parent_id') {
+         // Handle the 'null' case for parent_id explicitly
+         if (filters[key] === null) {
+            params.append(key, 'null');
+         } else {
+            params.append(key, filters[key]);
+         }
+      }
+      else {
+        params.append(key, filters[key]);
+      }
+    }
+  }
+
+  // Add pagination
+  if (pagination.page !== undefined && pagination.limit !== undefined) {
+    params.append('page', pagination.page);
+    params.append('limit', pagination.limit);
+  }
+  // Add sorting (example: sort=name:asc,created_at:desc) - needs backend to parse this format
+  const sortParams = Object.entries(sorting)
+    .map(([field, order]) => `${field}:${order}`)
+    .join(',');
+  if (sortParams) {
+    params.append('sort', sortParams);
+  }
+
+
+  const queryString = params.toString();
+  return queryString ? `?${queryString}` : '';
+};
+
+
+// List all locations with optional filters, pagination, and sorting
+export const getAllLocations = async (filters, pagination, sorting) => {
+  const queryString = buildQueryString(filters, pagination, sorting);
+  // Calls GET /api/locations?name=...&is_active=...&parent_id=...&page=...&limit=...&sort=...
+  return fetchApi(`/locations/${queryString}`);
 };
 
 // Get a single location by ID
 export const getLocationById = async (id) => {
-  // Calls GET /api/locations/:id
-  return fetchApi(`/locations/${id}`);
+  return fetchApi(`/locations/${id}`); // Calls GET /api/locations/:id
 };
 
 // Create a new location
 export const createLocation = async (locationData) => {
-  // locationData should match the expected payload
-  // e.g., { name, description, is_active, storage_capacity, parent_location }
-  // Calls POST /api/locations
-  return fetchApi('/locations', {
+  // locationData should match the expected payload for location creation
+  // e.g., { name, description, parent_id, is_active }
+  return fetchApi('/locations/', {
     method: 'POST',
     body: JSON.stringify(locationData),
-  });
+  }); // Calls POST /api/locations
 };
 
 // Update an existing location
 export const updateLocation = async (id, locationData) => {
   // locationData should contain the fields to update
-  // Calls PUT /api/locations/:id
+  // Use PUT or PATCH depending on your API's convention (PATCH for partial updates is common)
+  // The Python endpoint handles both, so either is fine, but PATCH is often preferred for updates.
   return fetchApi(`/locations/${id}`, {
-    method: 'PUT',
+    method: 'PATCH', // Or 'PUT'
     body: JSON.stringify(locationData),
-  });
+  }); // Calls PATCH (or PUT) /api/locations/:id
 };
 
-// Delete a location
+// Delete a location (logical delete - sets is_active=False)
 export const deleteLocation = async (id) => {
-    // Calls DELETE /api/locations/:id
+    // Note: Your Python DELETE endpoint performs a logical delete (setting is_active=False).
+    // A true physical delete would typically return 204 No Content.
+    // Since it returns a message, keeping it simple here.
     return fetchApi(`/locations/${id}`, {
         method: 'DELETE',
-    });
+    }); // Calls DELETE /api/locations/:id
 };
 
-// Might need function to get parent locations for dropdown
-// export const getParentLocationsForDropdown = async () => {
-//     const locations = await getAllLocations();
-//     // Filter out locations that cannot be parents (e.g., themselves in edit, or maybe certain types)
-//     return locations.data;
-// };
+// Example of fetching root locations (parent_id = null)
+export const getRootLocations = async (pagination, sorting) => {
+    const filters = { parent_id: null };
+    return getAllLocations(filters, pagination, sorting);
+}
+
+// You might add other specific functions if needed, e.g.,
+// export const getChildrenLocations = async (parentId, pagination, sorting) => { ... }

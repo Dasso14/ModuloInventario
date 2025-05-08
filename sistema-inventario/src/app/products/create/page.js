@@ -1,21 +1,37 @@
-// app/products/create/page.js
 "use client";
 
-import { useState } from 'react';
-import { Container, Form, Button, Card, Row, Col } from 'react-bootstrap';
+import { useState, useEffect } from 'react'; // Import useEffect
+import { Container, Form, Button, Card, Row, Col, Spinner, Alert } from 'react-bootstrap'; // Import Alert, Spinner
 import Link from 'next/link';
-import { exampleCategories, exampleSuppliers } from '@/lib/product-data';
+// Remove old simulated data import
+// import { exampleCategories, exampleSuppliers } from '@/lib/product-data';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast'; // Import toast
+
+// Import functions from your services
+import { createProduct } from '../../../services/productService'; // Adjust the path if necessary
+import { getAllCategories } from '../../../services/categoryService'; // Adjust the path if necessary
+import { getAllSuppliers } from '../../../services/supplierService'; // Adjust the path if necessary
+
 
 export default function CreateProductPage() {
   const router = useRouter();
+
+  const [categories, setCategories] = useState([]); // For category dropdown
+  const [suppliers, setSuppliers] = useState([]); // For supplier dropdown
+
+  const [loading, setLoading] = useState(true); // Loading state for initial fetch (categories/suppliers)
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for form submission
+  const [error, setError] = useState(null); // Error state for initial fetch
+  const [formError, setFormError] = useState(''); // Error state for form validation/submission
+
 
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
     description: '',
-    category_id: '',
-    supplier_id: '',
+    category_id: '', // Will store the ID as a string from select
+    supplier_id: '', // Will store the ID as a string from select
     unit_cost: '',
     unit_price: '',
     unit_measure: 'unidad',
@@ -23,121 +39,244 @@ export default function CreateProductPage() {
     volume: '',
     min_stock: '0',
     max_stock: '',
-    is_active: true,
+    is_active: true, // Boolean for checkbox
   });
 
+  // Fetch categories and suppliers when the component mounts
+  useEffect(() => {
+      const fetchRelatedData = async () => {
+          setLoading(true);
+          setError(null);
+          try {
+              // Fetch categories and suppliers in parallel
+              const [categoriesResult, suppliersResult] = await Promise.all([
+                  getAllCategories(),
+                  getAllSuppliers()
+              ]);
+
+              if (categoriesResult && categoriesResult.success) {
+                  setCategories(categoriesResult.data || []);
+              } else {
+                  console.error("Error fetching categories:", categoriesResult?.message);
+                  setError(categoriesResult?.message || "Error al cargar categorías.");
+                  toast.error("Error al cargar categorías.");
+              }
+
+               if (suppliersResult && suppliersResult.success) {
+                  setSuppliers(suppliersResult.data || []);
+               } else {
+                  console.error("Error fetching suppliers:", suppliersResult?.message);
+                  setError(suppliersResult?.message || "Error al cargar proveedores.");
+                  toast.error("Error al cargar proveedores.");
+               }
+
+          } catch (err) {
+              console.error('Error fetching related data:', err);
+              setError(err.message || 'Error al cargar datos relacionados (categorías/proveedores).');
+              toast.error('Error al cargar datos relacionados.');
+          } finally {
+              setLoading(false);
+          }
+      };
+
+      fetchRelatedData();
+  }, []); // Empty dependency array means this runs once on mount
+
+
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      const checked = e.target.checked;
-      setFormData(prevState => ({
-        ...prevState,
-        [name]: checked,
-      }));
-    } else {
-      setFormData(prevState => ({
-        ...prevState,
-        [name]: value,
-      }));
+    const { name, value, type, checked } = e.target;
+
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+
+     // Clear form error when user starts typing/changing
+    setFormError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setIsSubmitting(true);
+
+    // Basic client-side validation (can add more)
+    if (!formData.sku.trim() || !formData.name.trim() || !formData.category_id || !formData.supplier_id || formData.unit_cost === '' || formData.unit_price === '') {
+        setFormError('Por favor, completa todos los campos obligatorios.');
+        setIsSubmitting(false);
+        return;
+    }
+
+    // Prepare data for API (convert numbers back, handle empty strings for optional fields)
+    const dataToSubmit = {
+        ...formData,
+        // Convert string IDs from select to numbers
+        category_id: parseInt(formData.category_id, 10),
+        supplier_id: parseInt(formData.supplier_id, 10),
+        // Convert string numbers to floats/integers
+        unit_cost: parseFloat(formData.unit_cost),
+        unit_price: parseFloat(formData.unit_price),
+        // Convert optional number fields, send null if empty string
+        weight: formData.weight !== '' ? parseFloat(formData.weight) : null,
+        volume: formData.volume !== '' ? parseFloat(formData.volume) : null,
+        min_stock: parseInt(formData.min_stock, 10),
+        max_stock: formData.max_stock !== '' ? parseInt(formData.max_stock, 10) : null,
+        // is_active is already boolean
+    };
+
+    console.log('Datos a enviar a la API:', dataToSubmit);
+
+    try {
+      // Use the createProduct service function
+      const result = await createProduct(dataToSubmit);
+
+      // Assuming the service/API returns { success: boolean, data?: {...}, message?: string }
+      if (result && result.success) {
+        toast.success('Producto creado correctamente');
+        router.push('/products'); // Redirect to product list page
+      } else {
+        // Handle API-specific errors (e.g., validation errors from backend)
+        const errorMessage = result?.message || 'Error al crear el producto';
+        setFormError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } catch (err) {
+      console.error('Error creating product:', err);
+      // Handle network errors or errors thrown by fetchApi
+      const errorMessage = err.message || 'Error de comunicación con el servidor al crear';
+      setFormError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Datos a enviar:', formData);
-    alert('Producto creado (simulado)');
-    router.push('/products');
-  };
+  // --- Render Loading, Error, or Form ---
+
+  if (loading) {
+    return (
+      <Container className="text-center py-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </Spinner>
+        <p className="mt-2">Cargando datos para el formulario...</p>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">
+          <Alert.Heading>Error al cargar datos</Alert.Heading>
+          <p>{error}</p>
+          <hr />
+          <Link href="/products" passHref>
+            <Button variant="danger">Volver a la Lista de Productos</Button>
+          </Link>
+        </Alert>
+      </Container>
+    );
+  }
+
 
   return (
-    <>
+    <Container className="py-4"> {/* Added Container for consistent padding */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>Crear Nuevo Producto</h1>
         <Link href="/products" passHref >
-          <Button variant="secondary">Cancelar</Button>
+          <Button variant="secondary" disabled={isSubmitting}>Cancelar</Button> {/* Disable while submitting */}
         </Link>
       </div>
 
       <Card>
         <Card.Body>
+          {formError && <Alert variant="danger">{formError}</Alert>}
+
           <Form onSubmit={handleSubmit}>
             <Row className="mb-3">
-              <Form.Group as={Col} controlId="formSku">
-                <Form.Label>SKU</Form.Label>
-                <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} required maxLength="50" />
+              <Form.Group as={Col} md="4" controlId="formSku"> {/* Added Col size */}
+                <Form.Label>SKU <span className="text-danger">*</span></Form.Label>
+                <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} required maxLength="50" disabled={isSubmitting} />
               </Form.Group>
-              <Form.Group as={Col} controlId="formName">
-                <Form.Label>Nombre</Form.Label>
-                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />              </Form.Group>
+              <Form.Group as={Col} md="8" controlId="formName"> {/* Added Col size */}
+                <Form.Label>Nombre <span className="text-danger">*</span></Form.Label>
+                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required maxLength="255" disabled={isSubmitting} />
+              </Form.Group>
             </Row>
 
             <Form.Group className="mb-3" controlId="formDescription">
               <Form.Label>Descripción</Form.Label>
-              <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} />
+              <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} disabled={isSubmitting} />
             </Form.Group>
 
             <Row className="mb-3">
-              <Form.Group as={Col} controlId="formCategory">
-                <Form.Label>Categoría</Form.Label>
-                <Form.Select name="category_id" value={formData.category_id} onChange={handleChange} required>
+              <Form.Group as={Col} md="6" controlId="formCategory"> {/* Added Col size */}
+                <Form.Label>Categoría <span className="text-danger">*</span></Form.Label>
+                <Form.Select name="category_id" value={formData.category_id} onChange={handleChange} required disabled={isSubmitting || categories.length === 0}>
                   <option value="">Seleccione una categoría</option>
-                  {exampleCategories.map(category => (
-                    <option key={category.category_id} value={category.category_id}>{category.name}</option>
+                  {/* Use fetched categories */}
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option> 
                   ))}
                 </Form.Select>
+                 {categories.length === 0 && !loading && <Form.Text className="text-danger">No hay categorías disponibles.</Form.Text>}
               </Form.Group>
 
-              <Form.Group as={Col} controlId="formSupplier">
-                <Form.Label>Proveedor</Form.Label>
-                <Form.Select name="supplier_id" value={formData.supplier_id} onChange={handleChange} required>
+              <Form.Group as={Col} md="6" controlId="formSupplier"> {/* Added Col size */}
+                <Form.Label>Proveedor <span className="text-danger">*</span></Form.Label>
+                <Form.Select name="supplier_id" value={formData.supplier_id} onChange={handleChange} required disabled={isSubmitting || suppliers.length === 0}>
                   <option value="">Seleccione un proveedor</option>
-                  {exampleSuppliers.map(supplier => (
-                    <option key={supplier.supplier_id} value={supplier.supplier_id}>{supplier.name}</option>
+                   {/* Use fetched suppliers */}
+                  {suppliers.map(supplier => (
+                    <option key={supplier.id} value={supplier.id}>{supplier.name}</option> 
                   ))}
                 </Form.Select>
+                 {suppliers.length === 0 && !loading && <Form.Text className="text-danger">No hay proveedores disponibles.</Form.Text>}
               </Form.Group>
             </Row>
 
             <Row className="mb-3">
-              <Form.Group as={Col} controlId="formUnitCost">
-                <Form.Label>Costo Unitario</Form.Label>
-                <Form.Control type="number" step="0.01" name="unit_cost" value={formData.unit_cost} onChange={handleChange} required min="0" />
+              <Form.Group as={Col} md="4" controlId="formUnitCost"> {/* Added Col size */}
+                <Form.Label>Costo Unitario <span className="text-danger">*</span></Form.Label>
+                <Form.Control type="number" step="0.01" name="unit_cost" value={formData.unit_cost} onChange={handleChange} required min="0" disabled={isSubmitting} />
               </Form.Group>
-              <Form.Group as={Col} controlId="formUnitPrice">
-                <Form.Label>Precio Unitario</Form.Label>
-                <Form.Control type="number" step="0.01" name="unit_price" value={formData.unit_price} onChange={handleChange} required min="0" />
+              <Form.Group as={Col} md="4" controlId="formUnitPrice"> {/* Added Col size */}
+                <Form.Label>Precio Unitario <span className="text-danger">*</span></Form.Label>
+                <Form.Control type="number" step="0.01" name="unit_price" value={formData.unit_price} onChange={handleChange} required min="0" disabled={isSubmitting} />
               </Form.Group>
-              <Form.Group as={Col} controlId="formUnitMeasure">
-                <Form.Label>Unidad de Medida</Form.Label>
-                <Form.Select name="unit_measure" value={formData.unit_measure} onChange={handleChange} required>
+              <Form.Group as={Col} md="4" controlId="formUnitMeasure"> {/* Added Col size */}
+                <Form.Label>Unidad de Medida <span className="text-danger">*</span></Form.Label>
+                <Form.Select name="unit_measure" value={formData.unit_measure} onChange={handleChange} required disabled={isSubmitting}>
                   <option value="unidad">Unidad</option>
                   <option value="litro">Litro</option>
                   <option value="kilogramo">Kilogramo</option>
                   <option value="metro">Metro</option>
                   <option value="caja">Caja</option>
+                   {/* Add other units as needed */}
                 </Form.Select>
               </Form.Group>
             </Row>
 
             <Row className="mb-3">
-              <Form.Group as={Col} controlId="formWeight">
+              <Form.Group as={Col} md="6" controlId="formWeight"> {/* Added Col size */}
                 <Form.Label>Peso (kg)</Form.Label>
-                <Form.Control type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} min="0" />
+                <Form.Control type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} min="0" disabled={isSubmitting} />
               </Form.Group>
-              <Form.Group as={Col} controlId="formVolume">
+              <Form.Group as={Col} md="6" controlId="formVolume"> {/* Added Col size */}
                 <Form.Label>Volumen (m³)</Form.Label>
-                <Form.Control type="number" step="0.01" name="volume" value={formData.volume} onChange={handleChange} min="0" />
+                <Form.Control type="number" step="0.01" name="volume" value={formData.volume} onChange={handleChange} min="0" disabled={isSubmitting} />
               </Form.Group>
             </Row>
 
             <Row className="mb-3">
-              <Form.Group as={Col} controlId="formMinStock">
-                <Form.Label>Stock Mínimo</Form.Label>
-                <Form.Control type="number" name="min_stock" value={formData.min_stock} onChange={handleChange} required min="0" />
+              <Form.Group as={Col} md="6" controlId="formMinStock"> {/* Added Col size */}
+                <Form.Label>Stock Mínimo <span className="text-danger">*</span></Form.Label>
+                <Form.Control type="number" name="min_stock" value={formData.min_stock} onChange={handleChange} required min="0" disabled={isSubmitting} />
               </Form.Group>
-              <Form.Group as={Col} controlId="formMaxStock">
+              <Form.Group as={Col} md="6" controlId="formMaxStock"> {/* Added Col size */}
                 <Form.Label>Stock Máximo</Form.Label>
-                <Form.Control type="number" name="max_stock" value={formData.max_stock} onChange={handleChange} min="0" />
+                <Form.Control type="number" name="max_stock" value={formData.max_stock} onChange={handleChange} min="0" disabled={isSubmitting} />
               </Form.Group>
             </Row>
 
@@ -148,15 +287,23 @@ export default function CreateProductPage() {
                 name="is_active"
                 checked={formData.is_active}
                 onChange={handleChange}
+                disabled={isSubmitting}
               />
             </Form.Group>
 
-            <Button variant="primary" type="submit">
-              Guardar Producto
+            <Button variant="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Producto'
+              )}
             </Button>
           </Form>
         </Card.Body>
       </Card>
-    </>
+    </Container>
   );
 }
