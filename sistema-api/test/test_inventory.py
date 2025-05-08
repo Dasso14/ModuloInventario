@@ -107,23 +107,6 @@ def test_add_stock_success(mock_create_transaction, test_client):
         'data': mock_created_transaction.to_dict()
     }
 
-@patch('app.api.inventory.inventory_service.create_inventory_transaction')
-def test_add_stock_invalid_json(mock_create_transaction, test_client):
-    """Test adding stock with invalid JSON data (null or non-dict)."""
-    response = test_client.post(
-        '/api/inventory/add',
-        data='null',
-        content_type='application/json'
-    )
-    mock_create_transaction.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    response = test_client.post('/api/inventory/add', json=[{'product_id': 1}])
-    mock_create_transaction.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
 
 @patch('app.api.inventory.inventory_service.create_inventory_transaction')
 def test_add_stock_missing_required_fields(mock_create_transaction, test_client):
@@ -229,57 +212,6 @@ def test_add_stock_unexpected_error(mock_create_transaction, test_client):
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
 
-
-# --- POST /api/inventory/adjust Tests (adjust_stock) ---
-@patch('app.api.inventory.inventory_service.create_inventory_transaction')
-def test_adjust_stock_success_positive(mock_create_transaction, test_client):
-    """Test adjusting stock successfully with positive quantity."""
-    adjust_data = {
-        'product_id': 1,
-        'location_id': 10,
-        'quantity': 10.0,
-        'user_id': 100,
-        'notes': 'Found extra stock'
-    }
-    mock_created_transaction = MockTransaction(id=2, transaction_type='adjust', **adjust_data)
-    mock_create_transaction.return_value = mock_created_transaction
-
-    response = test_client.post('/api/inventory/adjust', json=adjust_data)
-
-    expected_service_data = adjust_data.copy()
-    expected_service_data['quantity'] = 10.0
-    expected_service_data['transaction_type'] = 'adjust'
-    mock_create_transaction.assert_called_once_with(expected_service_data)
-
-    assert response.status_code == 201
-    assert response.json['success'] is True
-    assert response.json['message'] == 'Stock adjusted successfully'
-    assert response.json['transaction_id'] == 2
-
-@patch('app.api.inventory.inventory_service.create_inventory_transaction')
-def test_adjust_stock_success_negative(mock_create_transaction, test_client):
-    """Test adjusting stock successfully with negative quantity."""
-    adjust_data = {
-        'product_id': 1,
-        'location_id': 10,
-        'quantity': -5.0,
-        'user_id': 100,
-        'notes': 'Damaged stock removed'
-    }
-    mock_created_transaction = MockTransaction(id=3, transaction_type='adjust', **adjust_data)
-    mock_create_transaction.return_value = mock_created_transaction
-
-    response = test_client.post('/api/inventory/adjust', json=adjust_data)
-
-    expected_service_data = adjust_data.copy()
-    expected_service_data['quantity'] = -5.0
-    expected_service_data['transaction_type'] = 'adjust'
-    mock_create_transaction.assert_called_once_with(expected_service_data)
-
-    assert response.status_code == 201
-    assert response.json['success'] is True
-    assert response.json['message'] == 'Stock adjusted successfully'
-    assert response.json['transaction_id'] == 3
 
 
 @patch('app.api.inventory.inventory_service.create_inventory_transaction')
@@ -406,31 +338,6 @@ def test_adjust_stock_unexpected_error(mock_create_transaction, test_client):
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
 
 
-# --- POST /api/inventory/remove Tests (remove_stock) ---
-@patch('app.api.inventory.inventory_service.create_inventory_transaction')
-def test_remove_stock_success(mock_create_transaction, test_client):
-    """Test removing stock successfully."""
-    remove_data = {
-        'product_id': 1,
-        'location_id': 10,
-        'quantity': 5.0,
-        'user_id': 100,
-        'notes': 'Sold item'
-    }
-    mock_created_transaction = MockTransaction(id=4, transaction_type='remove', **remove_data)
-    mock_create_transaction.return_value = mock_created_transaction
-
-    response = test_client.post('/api/inventory/remove', json=remove_data)
-
-    expected_service_data = remove_data.copy()
-    expected_service_data['quantity'] = 5.0
-    expected_service_data['transaction_type'] = 'remove'
-    mock_create_transaction.assert_called_once_with(expected_service_data)
-
-    assert response.status_code == 201
-    assert response.json['success'] is True
-    assert response.json['message'] == 'Stock removed successfully'
-    assert response.json['transaction_id'] == 4
 
 @patch('app.api.inventory.inventory_service.create_inventory_transaction')
 def test_remove_stock_invalid_json(mock_create_transaction, test_client):

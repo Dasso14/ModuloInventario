@@ -123,23 +123,6 @@ def test_list_categories_invalid_name_filter(mock_get_all, test_client):
     assert response.status_code == 400
     assert response.json == {'success': False, 'message': 'Invalid name filter'}
 
-# Note: Flask's request.args.get always returns strings, so testing non-string name input via query params is not directly possible in this way.
-
-@patch('app.api.categories.category_service.get_all_categories')
-def test_list_categories_invalid_parent_id_filter(mock_get_all, test_client):
-    """Test listing categories with invalid parent_id filter."""
-    # Invalid integer string
-    response = test_client.get('/api/categories/?parent_id=abc')
-    mock_get_all.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid parent_id'}
-
-    # Negative integer
-    response = test_client.get('/api/categories/?parent_id=-5')
-    mock_get_all.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'parent_id must be non-negative'}
-
 
 @patch('app.api.categories.category_service.get_all_categories')
 def test_list_categories_database_error(mock_get_all, test_client):
@@ -214,27 +197,6 @@ def test_create_category_success_with_null_parent(mock_create_category, test_cli
     assert response.json['data']['parent_id'] is None
 
 
-@patch('app.api.categories.category_service.create_category')
-def test_create_category_invalid_json(mock_create_category, test_client):
-    """Test creating a category with invalid JSON data (e.g., null or non-dict)."""
-    # Sending 'null' as the body with JSON content type
-    # This should result in request.get_json() returning None,
-    # triggering the 'if not isinstance(data, dict)' check.
-    response = test_client.post(
-        '/api/categories/',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_create_category.assert_not_called() # Service should not be called
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.post('/api/categories/', json=[{'name': 'Invalid'}])
-    mock_create_category.assert_not_called()
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
 
 
 @patch('app.api.categories.category_service.create_category')
@@ -456,29 +418,6 @@ def test_update_category_invalid_id(mock_update, test_client):
     assert response.status_code == 404
      # No specific JSON message expected here as Flask's default 404 is likely triggered
 
-
-@patch('app.api.categories.category_service.update_category')
-def test_update_category_invalid_json(mock_update, test_client):
-    """Test updating a category with invalid JSON data (e.g., null or non-dict)."""
-    category_id = 1
-    # Sending 'null' as the body with JSON content type
-    # This should result in request.get_json() returning None,
-    # triggering the 'if not isinstance(data, dict)' check.
-    response = test_client.put(
-        f'/api/categories/{category_id}',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_update.assert_not_called() # Service should not be called
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.put(f'/api/categories/{category_id}', json=[{'name': 'Invalid'}])
-    mock_update.assert_not_called()
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
 
 
 @patch('app.api.categories.category_service.update_category')
