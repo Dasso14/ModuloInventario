@@ -22,7 +22,7 @@ export const createProduct = async (productData) => {
   // productData should match the expected payload for product creation
   // e.g., { sku, name, description, category_id, supplier_id, ... }
   // Calls POST /api/products
-  return fetchApi('/products', {
+  return fetchApi('/products/', {
     method: 'POST',
     body: JSON.stringify(productData),
   });

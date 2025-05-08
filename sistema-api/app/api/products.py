@@ -9,7 +9,7 @@ from datetime import datetime
 # Instantiate the service
 product_service = ProductService()
 
-@products_bp.route('/', methods=['GET'])
+@products_bp.route('/', methods=['GET','OPTIONS'])
 def list_products():
     """
     GET /api/products
@@ -77,7 +77,7 @@ def list_products():
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@products_bp.route('/', methods=['POST'])
+@products_bp.route('/', methods=['POST','OPTIONS'])
 def create_product():
     """
     POST /api/products
@@ -110,7 +110,7 @@ def create_product():
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@products_bp.route('/<int:product_id>', methods=['GET'])
+@products_bp.route('/<int:product_id>', methods=['GET','OPTIONS'])
 def get_product(product_id):
     """
     GET /api/products/{product_id}
@@ -129,7 +129,7 @@ def get_product(product_id):
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@products_bp.route('/<int:product_id>', methods=['PUT', 'PATCH'])
+@products_bp.route('/<int:product_id>', methods=['PUT', 'PATCH','OPTIONS'])
 def update_product(product_id):
     """
     PUT /api/products/{product_id} or PATCH /api/products/{product_id}
@@ -161,7 +161,7 @@ def update_product(product_id):
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-@products_bp.route('/<int:product_id>', methods=['DELETE'])
+@products_bp.route('/<int:product_id>', methods=['DELETE','OPTIONS'])
 def delete_product(product_id):
     """
     DELETE /api/products/{product_id}
@@ -192,7 +192,7 @@ def delete_product(product_id):
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 # --- NEW ENDPOINT FOR STOCK LEVELS BY PRODUCT ---
-@products_bp.route('/<int:product_id>/stock-levels', methods=['GET'])
+@products_bp.route('/<int:product_id>/stock-levels', methods=['GET','OPTIONS'])
 def list_product_stock_levels(product_id):
     """GET /api/products/{product_id}/stock-levels - Lists stock levels for a specific product."""
     try:

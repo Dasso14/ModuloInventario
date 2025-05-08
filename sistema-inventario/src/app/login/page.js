@@ -4,80 +4,110 @@
 import { useState } from 'react';
 // Importa Link de next/link si necesitas un enlace (no hay en este login simple)
 import { useRouter } from 'next/navigation';
+// Import the login function from your authService
+import { login } from '../../services/authService'; // Adjust the path if necessary
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Use 'identifier' as it can be username or email
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // State to manage loading state
   const router = useRouter();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => { // Make the function async
     event.preventDefault();
-    setError(''); // Limpiar errores previos
+    setError(''); // Clear previous errors
+    setIsLoading(true); // Set loading state
 
-    // --- Lógica de Autenticación Simulada ---
-    // En un sistema real, enviarías username y password a tu API
-    // fetch('/api/login', { ... })
-    // .then(...)
-
-    // Simulación simple: aceptar cualquier cosa y redirigir
-    if (username && password) {
-        console.log('Intentando login con:', { username, password });
-        // Simulamos un login exitoso después de un pequeño retraso
-        setTimeout(() => {
-            alert('Login simulado exitoso!');
-            router.push('/'); // Redirige al dashboard (página principal)
-        }, 500);
-    } else {
-        setError('Por favor, ingrese usuario y contraseña.');
+    if (!identifier || !password) {
+        setError('Por favor, ingrese usuario/email y contraseña.');
+        setIsLoading(false);
+        return;
     }
-    // --- Fin Lógica de Autenticación Simulada ---
+
+    try {
+        // Call the login service
+        const data = await login(identifier, password);
+
+        console.log('Login successful:', data);
+        // Handle successful login (e.g., store token if you implement JWT)
+        // For now, just redirect
+        alert('Login exitoso!'); // Use a more sophisticated notification in a real app
+        router.push('/'); // Redirect to the dashboard (main page)
+
+    } catch (err) {
+        console.error('Login failed:', err);
+        // Display error message from the API or a default message
+        setError(err.message || 'Error al iniciar sesión. Intente de nuevo.');
+    } finally {
+        setIsLoading(false); // Clear loading state
+    }
+  };
+
+  // Function to navigate to the registration page
+  const handleGoToRegister = () => {
+    router.push('/register');
   };
 
   return (
     <div className="container" style={{ minHeight: '80vh' }}>
-  <div className="row justify-content-center align-items-center" style={{ minHeight: '100%' }}>
-    <div className="col-12 col-sm-8 col-md-6 col-lg-4">
-      <div className="card">
-        <div className="card-body">
-          <h5 className="card-title text-center mb-4">Iniciar Sesión</h5>
-          {error && <div className="alert alert-danger">{error}</div>}
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="usernameInput" className="form-label">Usuario</label>
-              <input
-                type="text"
-                className="form-control"
-                id="usernameInput"
-                placeholder="Ingrese usuario"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                maxLength="80"
-              />
-            </div>
+      <div className="row justify-content-center align-items-center" style={{ minHeight: '100%' }}>
+        <div className="col-12 col-sm-8 col-md-6 col-lg-4">
+          <div className="card">
+            <div className="card-body">
+              <h5 className="card-title text-center mb-4">Iniciar Sesión</h5>
+              {error && <div className="alert alert-danger">{error}</div>}
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="identifierInput" className="form-label">Usuario o Email</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="identifierInput"
+                    placeholder="Ingrese su usuario o email" // Placeholder added
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                    maxLength="120" // Adjust max length based on your DB schema (username 80, email 120)
+                  />
+                </div>
 
-            <div className="mb-3">
-              <label htmlFor="passwordInput" className="form-label">Contraseña</label>
-              <input
-                type="password"
-                className="form-control"
-                id="passwordInput"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                maxLength="255" /* Límite común para contraseñas, aunque el hash sea de 128 */
-              />
-            </div>
+                <div className="mb-3">
+                  <label htmlFor="passwordInput" className="form-label">Contraseña</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    id="passwordInput"
+                    placeholder="Ingrese su contraseña" // Placeholder added
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    maxLength="255" /* Common limit for passwords, though the hash is 128 */
+                  />
+                </div>
 
-            <button type="submit" className="btn btn-primary w-100">Ingresar</button>
-          </form>
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100"
+                  disabled={isLoading} // Disable button while loading
+                >
+                  {isLoading ? 'Cargando...' : 'Ingresar'} {/* Button text changes based on loading state */}
+                </button>
+              </form>
+               <div className="text-center mt-3">
+                <p>¿No tienes una cuenta?</p>
+                <button
+                    className="btn btn-link"
+                    onClick={handleGoToRegister} // Button to navigate to registration
+                    disabled={isLoading} // Disable while loading login
+                >
+                    Registrarse aquí
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-
   );
 }

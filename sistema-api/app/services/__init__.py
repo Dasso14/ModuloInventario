@@ -9,6 +9,7 @@ from .transaction_service import TransactionService
 from .transfer_service import TransferService
 from .report_service import ReportService
 from .inventory_service import InventoryService
+from .login_service import LoginService
 
 # Expose services for easy import
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     'LocationService',
     'TransactionService',
     'TransferService',
-    'ReportService'
+    'ReportService',
+    'LoginService'
 ]
