@@ -3,74 +3,194 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getStockLevels, getProductName, getLocationName } from '../../../../lib/product-data'; // Ajusta la ruta si es necesario
+// Import the service function to fetch stock levels data from the API
+import { getStockLevels } from '../../../services/reportService'; // Adjust the path as necessary
+
+// Removed imports for simulated data:
+// import { getStockLevels, getProductName, getLocationName } from '../../../../lib/product-data';
 
 export default function StockLevelsReportPage() {
   const [stockLevels, setStockLevels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // State to handle API errors
+
+   // State for filters (will be implemented later)
+  const [filters, setFilters] = useState({
+      productId: null,
+      locationId: null,
+      categoryId: null,
+      supplierId: null,
+      // Add other filter states as needed
+  });
+
+  // State for pagination (will be implemented later)
+  const [pagination, setPagination] = useState({
+      page: 1,
+      limit: 20, // Default limit
+  });
+
+   // State for sorting (will be implemented later)
+   const [sorting, setSorting] = useState({
+       sortBy: 'product_name', // Default sort by product name
+       order: 'asc', // Default order
+   });
+
 
   useEffect(() => {
-    // Simular carga de datos
-    const data = getStockLevels();
-    setStockLevels(data);
-    setLoading(false);
-    // En un sistema real: fetch('/api/reports/stock-levels').then(...)
-  }, []);
+    const fetchStockLevelsData = async () => {
+      setLoading(true); // Start loading
+      setError(null); // Clear previous errors
 
+      try {
+         // Prepare parameters for the API call (combine filters, pagination, sorting)
+        const params = {
+            ...filters,
+            ...pagination,
+            ...sorting,
+        };
+
+        // Call the service function to fetch stock levels data from the API
+        const response = await getStockLevels(params);
+
+        // Check if the API call was successful based on your response structure
+        if (response && response.success) {
+          // Update state with the fetched data
+          setStockLevels(response.data);
+        } else {
+          // Handle API error response
+          setError(response?.message || 'Error al cargar el reporte de niveles de stock.');
+           console.error('API Error fetching stock levels:', response?.message);
+        }
+      } catch (err) {
+        // Handle network or unexpected errors
+        console.error('Error fetching stock levels report:', err);
+        setError(err.message || 'Ocurrió un error inesperado al cargar el reporte.');
+      } finally {
+        setLoading(false); // End loading
+      }
+    };
+
+    // Execute the fetch function
+    fetchStockLevelsData();
+
+    // Dependency array: re-run effect when filters, pagination, or sorting change
+    // (Filtering/Pagination/Sorting logic to be added later)
+  }, [filters, pagination, sorting]); // Dependencies
+
+
+  // Show loading state
   if (loading) {
-    return <div className="text-center">Cargando...</div>;
+    return (
+         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+            <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Cargando...</span>
+            </div>
+            <div className="ms-2 text-primary">Cargando reporte de niveles de stock...</div>
+        </div>
+    );
   }
+
+  // Show error state
+   if (error) {
+       return (
+            <div className="alert alert-danger text-center" role="alert"> {/* Added role="alert" */}
+                <strong>Error:</strong> {error}
+            </div>
+        );
+    }
+
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      {/* Header with title and back button */}
+      <div className="d-flex justify-content-between align-items-center mb-4"> {/* Increased bottom margin */}
         <h1>Reporte de Niveles de Stock</h1>
-         <Link href="/" passHref >
+         {/* Adjust the back link destination if needed */}
+         <Link href="/" passHref > {/* Assuming / is your dashboard */}
             <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
         </Link>
       </div>
 
-      {/* Aquí irían los filtros (Producto, Ubicación, Categoría, etc.) */}
-       <div className="card mb-3">
+      {/* Placeholder for Filters (Implement filter UI and state updates here) */}
+       <div className="card mb-4"> {/* Increased bottom margin */}
            <div className="card-body">
-               <h6 className="card-title">Filtros (Próximamente)</h6>
-               {/* Placeholder para formulario de filtros */}
+               <h6 className="card-title">Filtros</h6>
+               {/* Example filter inputs - connect to state and update useEffect dependencies */}
                <form className="row g-3">
-                   <div className="col-md-4">
+                   <div className="col-md-3">
                        <label htmlFor="filterProduct" className="form-label">Producto</label>
-                       <input type="text" className="form-control form-control-sm" id="filterProduct" placeholder="Filtrar por producto" maxLength="255" />
+                        <select className="form-select form-select-sm" id="filterProduct"
+                           // value={filters.productId || ''} // Connect to state
+                           // onChange={(e) => setFilters({...filters, productId: e.target.value ? parseInt(e.target.value) : null})} // Update state
+                       >
+                           <option value="">Todos los productos</option>
+                           {/* Map your products data here */}
+                           {/* {products.map(prod => <option key={prod.id} value={prod.id}>{prod.sku} - {prod.name}</option>)} */}
+                       </select>
                    </div>
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                        <label htmlFor="filterLocation" className="form-label">Ubicación</label>
-                       <input type="text" className="form-control form-control-sm" id="filterLocation" placeholder="Filtrar por ubicación" maxLength="255" />
+                        <select className="form-select form-select-sm" id="filterLocation"
+                           // value={filters.locationId || ''} // Connect to state
+                           // onChange={(e) => setFilters({...filters, locationId: e.target.value ? parseInt(e.target.value) : null})} // Update state
+                       >
+                           <option value="">Todas las ubicaciones</option>
+                           {/* Map your locations data here */}
+                           {/* {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)} */}
+                       </select>
                    </div>
-                    <div className="col-md-2">
-                       <button type="submit" className="btn btn-primary btn-sm mt-4" disabled>Aplicar Filtros</button>
+                    <div className="col-md-3">
+                       <label htmlFor="filterCategory" className="form-label">Categoría</label>
+                        <select className="form-select form-select-sm" id="filterCategory"
+                           // value={filters.categoryId || ''} // Connect to state
+                           // onChange={(e) => setFilters({...filters, categoryId: e.target.value ? parseInt(e.target.value) : null})} // Update state
+                       >
+                           <option value="">Todas las categorías</option>
+                           {/* Map your categories data here */}
+                           {/* {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)} */}
+                       </select>
+                   </div>
+                    {/* Add other filters (Supplier, etc.) */}
+                    <div className="col-md-2 d-flex align-items-end"> {/* Align button to the bottom */}
+                       {/* Filter button - onClick should trigger filter state update */}
+                       <button type="button" className="btn btn-primary btn-sm w-100"
+                           // onClick={() => { /* Trigger fetch by updating filter state */ }}
+                           disabled // Disable until filter logic is implemented
+                       >Aplicar Filtros</button>
                    </div>
                </form>
            </div>
        </div>
 
 
+      {/* Display the report data */}
       {stockLevels.length === 0 ? (
-           <div className="alert alert-info">No hay niveles de stock registrados.</div>
+           <div className="alert alert-info text-center" role="alert"> {/* Added role="alert" */}
+               No hay niveles de stock registrados.
+           </div>
       ) : (
            <div className="table-responsive">
-                <table className="table table-striped table-bordered table-hover table-sm"> 
+                <table className="table table-striped table-bordered table-hover table-sm">
                   <thead>
                     <tr>
+                      {/* Table headers - adjust based on actual data structure */}
                       <th>Producto</th>
                       <th>Ubicación</th>
                       <th>Cantidad</th>
-                      <th>Última Actualización (Simulado)</th>
+                      <th>Última Actualización</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {/* Map over the fetched stockLevels */}
                     {stockLevels.map(item => (
-                      <tr key={item.stock_id}>
-                        <td>{getProductName(item.product_id)}</td>
-                        <td>{getLocationName(item.location_id)}</td> 
+                      // Use a unique key, like stock_id if available, or a combination
+                      // Assuming stock_levels table has a stock_id or product_id+location_id is unique
+                      <tr key={item.stock_id || `${item.product_id}-${item.location_id}`}>
+                         {/* Access properties directly from the API response data */}
+                        <td>{item.product_name}</td> {/* Assuming API returns product_name */}
+                        <td>{item.location_name}</td> {/* Assuming API returns location_name */}
                         <td>{item.quantity}</td>
+                        {/* Format the date if it's a string */}
                         <td>{item.last_updated ? new Date(item.last_updated).toLocaleString() : 'N/A'}</td>
                       </tr>
                     ))}
