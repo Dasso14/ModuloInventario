@@ -9,6 +9,10 @@ load_dotenv(os.path.join(basedir, '.flaskenv'))
 
 
 class Config:
+    CORS_ORIGINS = ["http://localhost:3000"]        # qué orígenes permitir (Access-Control-Allow-Origin) :contentReference[oaicite:1]{index=1}
+    CORS_METHODS = ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]  # métodos permitidos :contentReference[oaicite:2]{index=2}
+    CORS_HEADERS = ["Content-Type","Authorization"]                # headers permitidos :contentReference[oaicite:3]{index=3}
+    CORS_AUTOMATIC_OPTIONS = True     # que Flask‑CORS gestione automáticamente las OPTIONS preflight :contentReference[oaicite:4]{index=4}
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess' # Change this!
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'postgresql://user:password@host:port/dbname' # Fallback DB URI (replace!)

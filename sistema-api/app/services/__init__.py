@@ -8,9 +8,11 @@ from .location_service import LocationService
 from .transaction_service import TransactionService
 from .transfer_service import TransferService
 from .report_service import ReportService
+from .inventory_service import InventoryService
 
 # Expose services for easy import
 __all__ = [
+    'InventoryService',
     'BaseService',
     'ProductService',
     'CategoryService',

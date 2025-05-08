@@ -1,0 +1,55 @@
+app/
+├────── layout.js
+│   └── page.js
+├── products/
+│   ├── page.js        (Lista de productos)
+│   ├── create/
+│   │   └── page.js     (Crear producto)
+│   └── [id]/
+│       ├── page.js     (Detalles del producto)
+│       └── edit/
+│           └── page.js (Editar producto)
+├── categories/
+│   ├── page.js         (Lista de categorías)
+│   ├── create/
+│   │   └── page.js     (Crear categoría)
+│   └── [id]/
+│       └── page.js
+│       └── edit/
+│           └── page.js (Editar categoría)
+├── suppliers/
+│   ├── page.js         (Lista de proveedores)
+│   ├── create/
+│   │   └── page.js     (Crear proveedor)
+│   └── [id]/
+│       └── page.js
+│       └── edit/
+│           └── page.js (Editar proveedor)
+├── locations/
+│   ├── page.js         (Lista de ubicaciones)
+│   ├── create/
+│   │   └── page.js     (Crear ubicación)
+│   └── [id]/
+│       └── page.js
+│       └── edit/
+│           └── page.js (Editar ubicación)
+├── inventory/
+│   ├── add/
+│   │   └── page.js     (Añadir stock)
+│   ├── remove/
+│   │   └── page.js     (Remover stock)
+│   ├── adjust/
+│   │   └── page.js     (Ajustar stock)
+│   └── transfer/
+│       └── page.js     (Transferir stock)
+├── reports/
+│   ├── stock-levels/
+│   │   └── page.js     (Niveles de stock)
+│   ├── transactions/
+│   │   └── page.js     (Historial de transacciones)
+│   ├── low-stock/
+│   │   └── page.js     (Stock bajo)
+│   └── transfers/
+│       └── page.js     (Historial de transferencias)
+└── login/
+    └── page.js         (Login)

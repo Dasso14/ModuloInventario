@@ -4,62 +4,95 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCategoryById, getCategories } from '../../../../../lib/product-data'; // Ajusta la ruta si es necesario
+// Import from your service
+import { getCategoryById, getAllCategories, updateCategory } from '../../../../services/categoryService';
 
 export default function EditCategoryPage() {
   const router = useRouter();
   const params = useParams();
+  // Ensure categoryId is a number, handle potential null/undefined from params
   const categoryId = params.id ? parseInt(params.id, 10) : null;
 
-  const [category, setCategory] = useState(undefined); // Almacena los datos originales
+  const [category, setCategory] = useState(undefined); // Stores original fetched data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [availableParents, setAvailableParents] = useState([]); // Lista de categorías para seleccionar como padre
+  const [availableParents, setAvailableParents] = useState([]); // List of categories for parent select
+  const [loadingParents, setLoadingParents] = useState(true);
 
-  // Estado para el formulario
+  // State for the form data, initialized empty
   const [formData, setFormData] = useState({
     name: '',
-    parent_id: '',
+    parent_id: '', // Use string empty for the select value when no parent is chosen
     description: '',
   });
-   const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
-    if (categoryId !== null && !isNaN(categoryId)) {
-      setLoading(true);
-      setError(null);
+    // Fetch category data and available parents concurrently
+    const fetchData = async () => {
+        if (categoryId === null || isNaN(categoryId)) {
+            setError("ID de categoría inválido en la URL.");
+            setLoading(false);
+            setLoadingParents(false);
+            return;
+        }
 
-      // Cargar datos de la categoría a editar
-      const foundCategory = getCategoryById(categoryId);
-
-      if (foundCategory) {
-          setCategory(foundCategory);
-          // Precargar el formulario
-          setFormData({
-            name: foundCategory.name,
-            parent_id: foundCategory.parent_id ? foundCategory.parent_id.toString() : '', // Convertir a string para select
-            description: foundCategory.description || '',
-          });
-           setLoading(false);
-      } else {
-           setError(`Categoría con ID ${categoryId} no encontrada.`);
-           setLoading(false);
-      }
-
-      // Cargar categorías disponibles para seleccionar como padre (excluir la categoría actual)
-      const categories = getCategories().filter(cat => cat.category_id !== categoryId);
-      setAvailableParents(categories);
+        setLoading(true);
+        setError(null);
+        setLoadingParents(true);
 
 
-      // En un sistema real:
-      // fetch(`/api/categories/${categoryId}`).then(...)
-      // fetch('/api/categories').then(...).then(allCats => setAvailableParents(allCats.filter(...)))
-    } else {
-         setError("ID de categoría inválido en la URL.");
-         setLoading(false);
-    }
-  }, [categoryId]);
+        try {
+            // Fetch the specific category
+            const categoryResponse = await getCategoryById(categoryId);
+            if (categoryResponse && categoryResponse.success) {
+                const fetchedCategory = categoryResponse.data;
+                setCategory(fetchedCategory);
+                // Pre-fill the form with fetched data
+                setFormData({
+                    name: fetchedCategory.name,
+                    parent_id: fetchedCategory.parent_id ? fetchedCategory.parent_id.toString() : '', // Convert to string for select
+                    description: fetchedCategory.description || '',
+                });
+                 setLoading(false);
+            } else {
+                 // Handle API-specific success: false
+                 setError(categoryResponse?.message || `Failed to fetch category with ID ${categoryId}`);
+                 setLoading(false);
+                 return; // Stop if category not found/failed to fetch
+            }
+
+        } catch (err) {
+            console.error(`Error fetching category ${categoryId}:`, err);
+            setError(err.message || `An error occurred while fetching category ${categoryId}.`);
+            setLoading(false);
+            return; // Stop if error fetching category
+        }
+
+        // Fetch all categories for the parent dropdown
+         try {
+            const parentsResponse = await getAllCategories();
+             if (parentsResponse && parentsResponse.success) {
+                // Filter out the category being edited from the parent options
+                const filteredParents = parentsResponse.data.filter(cat => cat.category_id !== categoryId);
+                setAvailableParents(filteredParents);
+             } else {
+                console.error('Failed to fetch parent categories:', parentsResponse?.message);
+                // Still allow editing even if parent list fails, just the dropdown will be empty/broken
+             }
+         } catch (err) {
+            console.error('Error fetching parent categories:', err);
+             // Still allow editing even if parent list fails
+         } finally {
+             setLoadingParents(false);
+         }
+    };
+
+    fetchData();
+
+  }, [categoryId]); // Effect depends on categoryId
 
 
   const handleChange = (e) => {
@@ -68,45 +101,73 @@ export default function EditCategoryPage() {
       ...prevState,
       [name]: value,
     }));
-    setFormError('');
+    setFormError(''); // Clear form error when form changes
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
 
-    // --- Validación simple ---
-    if (!formData.name) {
+    // --- Simple Validation ---
+    if (!formData.name.trim()) {
         setFormError('El nombre de la categoría es obligatorio.');
         return;
     }
-    // --- Fin Validación simple ---
+    // --- End Simple Validation ---
 
-    console.log(`Datos a actualizar para categoría ID ${categoryId}:`, formData);
-    // Lógica para enviar los datos actualizados a tu API
-    // fetch(`/api/categories/${categoryId}`, {
-    //    method: 'PUT',
-    //    headers: { 'Content-Type': 'application/json' },
-    //    body: JSON.stringify({
-    //      ...formData,
-    //      parent_id: formData.parent_id === '' ? null : parseInt(formData.parent_id, 10)
-    //    }),
-    // })
-    // .then(...)
+     if (categoryId === null || isNaN(categoryId)) {
+        setFormError("No se puede actualizar, ID de categoría inválido.");
+        return;
+    }
 
+    setIsSubmitting(true); // Disable button while submitting
 
-    alert(`Categoría ${category?.name} actualizada (simulado)`); // Simulación
-    router.push(`/categories/${categoryId}`); // Redirigir a los detalles
+    // Prepare data for the API call
+    const dataToSend = {
+      ...formData,
+      // Convert parent_id: "" to null for the backend if necessary
+      parent_id: formData.parent_id === '' ? null : parseInt(formData.parent_id, 10),
+       // Add user_id if your backend requires it for update context
+       // user_id: currentUser.id, // Example if you have logged-in user info
+    };
+
+    try {
+        // Call the update service function
+        const response = await updateCategory(categoryId, dataToSend);
+
+        if (response && response.success) {
+            console.log(`Category ${categoryId} updated successfully:`, response.data);
+             alert(`Categoría ${response.data.name} actualizada`); // Success message
+            // Redirect to the category details page
+            router.push(`/categories/${categoryId}`);
+        } else {
+             // Handle API-specific success: false response structure
+             const errorMessage = response?.message || `Failed to update category ${categoryId}`;
+             setFormError(errorMessage);
+             console.error('API Error updating category:', errorMessage);
+             alert(`Error al actualizar: ${errorMessage}`); // Show user-friendly error
+        }
+
+    } catch (err) {
+        console.error(`Error updating category ${categoryId}:`, err);
+        setFormError(err.message || `An error occurred while updating category ${categoryId}.`);
+        alert(`Error al actualizar: ${err.message || 'Ocurrió un error'}`); // Show user-friendly error
+    } finally {
+        setIsSubmitting(false); // Re-enable button
+    }
   };
 
+    // Show loading states for initial data fetch
     if (loading) {
-        return <div className="text-center">Cargando...</div>;
+        return <div className="text-center text-primary">Cargando datos de la categoría...</div>;
     }
 
+    // Show error if initial fetch failed
     if (error) {
-        return <div className="alert alert-danger">{error}</div>;
+        return <div className="alert alert-danger">Error: {error}</div>;
     }
 
+     // Show message if category data is somehow missing after loading
      if (!category) {
         return <div className="alert alert-warning">Categoría no disponible para editar.</div>;
     }
@@ -124,43 +185,50 @@ export default function EditCategoryPage() {
         <div className="card">
             <div className="card-body">
                  {formError && <div className="alert alert-danger">{formError}</div>}
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                        <label htmlFor="nameInput" className="form-label">Nombre de la Categoría</label>
-                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required maxLength="100" />
-                    </div>
 
-                     <div className="mb-3">
-                        <label htmlFor="parentSelect" className="form-label">Categoría Padre (Opcional)</label>
-                        <select
-                            className="form-select"
-                            id="parentSelect"
-                            name="parent_id"
-                            value={formData.parent_id}
-                            onChange={handleChange}
-                        >
-                            <option value="">Sin Categoría Padre</option>
-                            {/* Mapear las categorías disponibles. Asegurarse de que la categoría actual no aparezca como opción padre */}
-                            {availableParents.map(parentCat => (
-                                <option key={parentCat.category_id} value={parentCat.category_id}>
-                                    {parentCat.name}
-                                </option>
-                            ))}
-                        </select>
-                         <div className="form-text">
-                           Seleccione una categoría si esta es una subcategoría. No se puede seleccionar a sí misma.
-                        </div>
-                    </div>
+                 {/* Only show form if parent categories are loaded, or handle loading state inside form */}
+                 {loadingParents ? (
+                     <div className="text-center text-primary">Cargando opciones de categorías padre...</div>
+                 ) : (
+                     <form onSubmit={handleSubmit}>
+                         <div className="mb-3">
+                             <label htmlFor="nameInput" className="form-label">Nombre de la Categoría</label>
+                             <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required disabled={isSubmitting}/>
+                         </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="descriptionTextarea" className="form-label">Descripción</label>
-                        <textarea className="form-control" id="descriptionTextarea" rows="3" name="description" value={formData.description} onChange={handleChange}></textarea>
-                    </div>
+                          <div className="mb-3">
+                             <label htmlFor="parentSelect" className="form-label">Categoría Padre (Opcional)</label>
+                             <select
+                                 className="form-select"
+                                 id="parentSelect"
+                                 name="parent_id"
+                                 value={formData.parent_id}
+                                 onChange={handleChange}
+                                 disabled={isSubmitting || loadingParents}
+                             >
+                                 <option value="">Sin Categoría Padre</option>
+                                 {/* Map available categories */}
+                                 {availableParents.map(parentCat => (
+                                     <option key={parentCat.id} value={parentCat.id}>
+                                         {parentCat.name}
+                                     </option>
+                                 ))}
+                             </select>
+                              <div className="form-text">
+                                Seleccione una categoría si esta es una subcategoría. No se puede seleccionar a sí misma.
+                             </div>
+                         </div>
 
-                    <button type="submit" className="btn btn-primary">
-                        Actualizar Categoría
-                    </button>
-                </form>
+                         <div className="mb-3">
+                             <label htmlFor="descriptionTextarea" className="form-label">Descripción</label>
+                             <textarea className="form-control" id="descriptionTextarea" rows="3" name="description" value={formData.description} onChange={handleChange} disabled={isSubmitting}></textarea>
+                         </div>
+
+                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                             {isSubmitting ? 'Actualizando...' : 'Actualizar Categoría'}
+                         </button>
+                     </form>
+                 )}
             </div>
         </div>
      </>

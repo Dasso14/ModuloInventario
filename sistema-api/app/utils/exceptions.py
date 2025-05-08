@@ -14,3 +14,6 @@ class InsufficientStockException(ConflictException):
 class DatabaseException(Exception):
     """Base exception for database-related errors not covered by others."""
     pass
+class InvalidInputException(Exception):
+    """Base exception for database-related errors not covered by others."""
+    pass

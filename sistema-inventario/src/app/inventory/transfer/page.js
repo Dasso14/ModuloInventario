@@ -1,15 +1,21 @@
 // app/inventory/transfer/page.js
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect
 import Link from 'next/link';
-import { getProducts, getLocations } from '../../../../lib/product-data'; // Datos para selects
+// Import services
+import { getAllProducts } from '../../services/productService';
+import { getAllLocations } from '../../services/locationService';
+import { transferStock } from '../../services/inventoryService'; // Import transferStock
 import { useRouter } from 'next/navigation';
 
 export default function TransferInventoryPage() {
    const router = useRouter();
-  const products = getProducts();
-  const locations = getLocations();
+   const [products, setProducts] = useState([]);
+   const [locations, setLocations] = useState([]);
+   const [loading, setLoading] = useState(true); // Loading for dropdown data
+   const [fetchError, setFetchError] = useState(null); // Error fetching dropdown data
+
 
   const [formData, setFormData] = useState({
     product_id: '',
@@ -17,9 +23,48 @@ export default function TransferInventoryPage() {
     to_location_id: '',
     quantity: '',
     notes: '',
+    // TODO: Replace hardcoded user_id with actual logged-in user's ID
     user_id: 1,
   });
-    const [error, setError] = useState('');
+    const [formError, setFormError] = useState(''); // Error for form submission
+    const [isSubmitting, setIsSubmitting] = useState(false); // State for submission
+
+
+   useEffect(() => {
+      // Fetch products and locations concurrently
+      const fetchData = async () => {
+          setLoading(true);
+          setFetchError(null);
+          try {
+              const [productsResponse, locationsResponse] = await Promise.all([
+                  getAllProducts(),
+                  getAllLocations()
+              ]);
+
+              if (productsResponse && productsResponse.success) {
+                  setProducts(productsResponse.data);
+              } else {
+                  console.error('Failed to fetch products:', productsResponse?.message);
+                  setFetchError('Error al cargar la lista de productos.');
+              }
+
+               if (locationsResponse && locationsResponse.success) {
+                  setLocations(locationsResponse.data);
+              } else {
+                  console.error('Failed to fetch locations:', locationsResponse?.message);
+                   setFetchError('Error al cargar la lista de ubicaciones.');
+              }
+
+          } catch (err) {
+              console.error('Error fetching initial data:', err);
+              setFetchError('Ocurrió un error al cargar los datos necesarios.');
+          } finally {
+              setLoading(false);
+          }
+      };
+
+      fetchData();
+  }, []); // Fetch data on component mount
 
 
   const handleChange = (e) => {
@@ -28,49 +73,80 @@ export default function TransferInventoryPage() {
       ...prevState,
       [name]: value,
     }));
-     setError('');
+     setFormError(''); // Clear error on change
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setFormError('');
 
     const quantityValue = parseFloat(formData.quantity);
 
-    // --- Validación simple ---
+    // --- Simple Validation ---
     if (!formData.product_id || !formData.from_location_id || !formData.to_location_id || isNaN(quantityValue) || quantityValue <= 0) {
-         setError('Por favor, complete todos los campos requeridos con valores válidos.');
+         setFormError('Por favor, complete todos los campos requeridos con valores válidos.');
          return;
      }
      if (formData.from_location_id === formData.to_location_id) {
-         setError('La ubicación de origen y destino deben ser diferentes.');
+         setFormError('La ubicación de origen y destino deben ser diferentes.');
          return;
      }
-     // --- Fin Validación simple ---
+     // --- End Simple Validation ---
 
+    setIsSubmitting(true); // Disable button
 
-    console.log('Iniciando Transferencia:', formData);
+    try {
+        // Call the transferStock service function
+        const response = await transferStock({
+            ...formData,
+            quantity: quantityValue, // Ensure quantity is sent as a number
+             // Include user_id from state (replace hardcoded value later)
+        });
 
-     // --- Lógica para iniciar la transferencia (llamada a API que ejecuta procedure) ---
-    // fetch('/api/inventory/transfer', { ... })
-    // Validar stock disponible en origen en el backend
+        if (response && response.success) {
+            console.log('Transferencia de stock registrada con éxito:', response.data);
+             alert('Transferencia de stock registrada con éxito.');
+            // Redirect to the transfers history report page
+            router.push('/reports/transfers');
+        } else {
+             // Handle API-specific success: false response structure
+             const errorMessage = response?.message || 'Error al registrar la transferencia de stock';
+             setFormError(errorMessage);
+             console.error('API Error registering stock transfer:', errorMessage);
+              alert(`Error: ${errorMessage}`); // Show user-friendly error
+        }
 
-    // Simulación:
-    console.warn("¡Advertencia! En producción, validar stock disponible en el origen antes de permitir la transferencia.");
-    alert(`Transferencia de ${formData.quantity} unidades del Producto ID ${formData.product_id} de Ubicación ${formData.from_location_id} a Ubicación ${formData.to_location_id} registrada (simulado).`);
-    router.push('/reports/transfers');
+    } catch (err) {
+        console.error('Error registering stock transfer:', err);
+        setFormError(err.message || 'Ocurrió un error al registrar la transferencia.');
+         alert(`Error: ${err.message || 'Ocurrió un error'}`); // Show user-friendly error
+    } finally {
+        setIsSubmitting(false); // Re-enable button
+    }
   };
+
+   // Show loading state for dropdown data
+   if (loading) {
+       return <div className="text-center text-primary">Cargando datos de productos y ubicaciones...</div>;
+   }
+
+    // Show error if fetching dropdown data failed
+    if (fetchError) {
+       return <div className="alert alert-danger">Error al cargar los datos: {fetchError}</div>;
+    }
+
 
   return (
      <>
         <div className="d-flex justify-content-between align-items-center mb-3">
             <h1>Transferir Stock entre Ubicaciones</h1>
-             <Link href="/" passHref >
-                 <button type="button" className="btn btn-secondary">Volver al Dashboard</button>
+             {/* Adjust the back link destination if needed */}
+             <Link href="/inventory" passHref > {/* Assuming /inventory is an index page */}
+                 <button type="button" className="btn btn-secondary">Volver</button>
             </Link>
         </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {formError && <div className="alert alert-danger">{formError}</div>}
 
         <div className="card">
             <div className="card-body">
@@ -84,6 +160,7 @@ export default function TransferInventoryPage() {
                             value={formData.product_id}
                             onChange={handleChange}
                             required
+                             disabled={isSubmitting} // Disable while submitting
                         >
                             <option value="">Seleccione un producto</option>
                             {products.map(product => (
@@ -102,6 +179,7 @@ export default function TransferInventoryPage() {
                                 value={formData.from_location_id}
                                 onChange={handleChange}
                                 required
+                                 disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione ubicación de origen</option>
                                 {locations.map(location => (
@@ -119,9 +197,10 @@ export default function TransferInventoryPage() {
                                 value={formData.to_location_id}
                                 onChange={handleChange}
                                 required
+                                 disabled={isSubmitting} // Disable while submitting
                             >
                                 <option value="">Seleccione ubicación de destino</option>
-                                {/* Puedes filtrar la ubicación de destino para que no sea igual al origen si deseas */}
+                                {/* You might want to filter the destination location so it cannot be the same as the source */}
                                 {locations.map(location => (
                                     <option key={location.location_id} value={location.location_id}>{location.name}</option>
                                 ))}
@@ -142,6 +221,7 @@ export default function TransferInventoryPage() {
                             onChange={handleChange}
                             required
                             min="0.01"
+                            disabled={isSubmitting} // Disable while submitting
                         />
                     </div>
 
@@ -154,11 +234,12 @@ export default function TransferInventoryPage() {
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
+                             disabled={isSubmitting} // Disable while submitting
                         ></textarea>
                     </div>
 
-                    <button type="submit" className="btn btn-primary">
-                        Confirmar Transferencia
+                    <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                        {isSubmitting ? 'Confirmando...' : 'Confirmar Transferencia'}
                     </button>
                 </form>
             </div>
