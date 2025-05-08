@@ -1,99 +1,107 @@
 // app/suppliers/page.js
+// app/suppliers/create/page.js
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { getSuppliers } from '../../../lib/product-data'; // Ajusta la ruta si es necesario
+import { useRouter } from 'next/navigation';
 
-export default function SupplierListPage() {
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function CreateSupplierPage() {
+  const router = useRouter();
 
-  useEffect(() => {
-    // Simular carga de datos
-    const data = getSuppliers();
-    setSuppliers(data);
-    setLoading(false);
-    // En un sistema real:
-    // fetch('/api/suppliers')
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     setSuppliers(data);
-    //     setLoading(false);
-    //   });
-  }, []);
-
-   const handleDelete = (id) => {
-       if (confirm(`¿Está seguro de eliminar el proveedor con ID ${id}? (Simulado)`)) {
-           console.log(`Eliminando proveedor con ID: ${id} (Simulado)`);
-           // Lógica de eliminación real:
-           // fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
-           // .then(...)
-           // Actualizar la lista después de eliminar (re-fetch o filtrar)
-           setSuppliers(suppliers.filter(supplier => supplier.supplier_id !== id)); // Simulación de eliminación de la lista
-       }
-   };
+  const [formData, setFormData] = useState({
+    name: '',
+    contact_name: '',
+    phone: '',
+    email: '',
+    address: '',
+    tax_id: '',
+  });
+   const [error, setError] = useState('');
 
 
-  if (loading) {
-    return <div className="text-center">Cargando...</div>; // Puedes usar un spinner de Bootstrap si quieres
-  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value,
+    }));
+     setError('');
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+     setError('');
+
+    // --- Validación simple ---
+    if (!formData.name) {
+        setError('El nombre del proveedor es obligatorio.');
+        return;
+    }
+    // --- Fin Validación simple ---
+
+
+    console.log('Datos a enviar para crear proveedor:', formData);
+    // Lógica para enviar datos a tu API para crear el proveedor
+    // fetch('/api/suppliers', { method: 'POST', body: JSON.stringify(formData) })
+    // .then(...)
+
+    alert('Proveedor creado (simulado)'); // Simulación
+    router.push('/suppliers'); // Redirigir a la lista de proveedores después de "crear"
+  };
 
   return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h1>Lista de Proveedores</h1>
-        <Link href="/suppliers/create" passHref >
-           <button type="button" className="btn btn-primary">Crear Nuevo Proveedor</button>
-        </Link>
-      </div>
+     <>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+            <h1>Crear Nuevo Proveedor</h1>
+            <Link href="/suppliers" passHref >
+                 <button type="button" className="btn btn-secondary">Cancelar</button>
+            </Link>
+        </div>
 
-      {/* Aquí iría la barra de búsqueda/filtrado si la implementas */}
+        <div className="card">
+            <div className="card-body">
+                {error && <div className="alert alert-danger">{error}</div>}
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label htmlFor="nameInput" className="form-label">Nombre del Proveedor</label>
+                        <input type="text" className="form-control" id="nameInput" name="name" value={formData.name} onChange={handleChange} required maxLength="255" />
+                    </div>
 
-      <div className="table-responsive"> {/* Añadir responsive para tablas pequeñas */}
-        <table className="table table-striped table-bordered table-hover">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Contacto</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              {/* <th>Dirección</th> */}
-              {/* <th>RFC/Tax ID</th> */}
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {suppliers.map(supplier => (
-              <tr key={supplier.supplier_id}>
-                <td>{supplier.supplier_id}</td>
-                <td>{supplier.name}</td>
-                <td>{supplier.contact_name || 'N/A'}</td>
-                <td>{supplier.phone || 'N/A'}</td>
-                <td>{supplier.email || 'N/A'}</td>
-                {/* <td>{supplier.address || 'N/A'}</td> */}
-                {/* <td>{supplier.tax_id || 'N/A'}</td> */}
-                <td>
-                  <Link href={`/suppliers/${supplier.supplier_id}`} passHref >
-                    <button type="button" className="btn btn-info btn-sm me-2">Ver</button>
-                  </Link>
-                   <Link href={`/suppliers/${supplier.supplier_id}/edit`} passHref >
-                    <button type="button" className="btn btn-warning btn-sm me-2">Editar</button>
-                  </Link>
-                   <button
-                       type="button"
-                       className="btn btn-danger btn-sm"
-                       onClick={() => handleDelete(supplier.supplier_id)}
-                   >
-                       Eliminar
-                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+                    <div className="row g-3 mb-3">
+                        <div className="col-md-6">
+                            <label htmlFor="contactNameInput" className="form-label">Nombre de Contacto</label>
+                            <input type="text" className="form-control" id="contactNameInput" name="contact_name" value={formData.contact_name} onChange={handleChange} maxLength="255" />
+                        </div>
+                         <div className="col-md-6">
+                            <label htmlFor="phoneInput" className="form-label">Teléfono</label>
+                            <input type="tel" className="form-control" id="phoneInput" name="phone" value={formData.phone} onChange={handleChange} maxLength="50" />
+                        </div>
+                    </div>
+
+                    <div className="row g-3 mb-3">
+                         <div className="col-md-6">
+                            <label htmlFor="emailInput" className="form-label">Email</label>
+                            <input type="email" className="form-control" id="emailInput" name="email" value={formData.email} onChange={handleChange} maxLength="100" />
+                        </div>
+                         <div className="col-md-6">
+                            <label htmlFor="taxIdInput" className="form-label">RFC / Tax ID</label>
+                            <input type="text" className="form-control" id="taxIdInput" name="tax_id" value={formData.tax_id} onChange={handleChange} maxLength="50" />
+                        </div>
+                    </div>
+
+
+                    <div className="mb-3">
+                        <label htmlFor="addressTextarea" className="form-label">Dirección</label>
+                        <textarea className="form-control" id="addressTextarea" rows="3" name="address" value={formData.address} onChange={handleChange}></textarea>
+                    </div>
+
+                    <button type="submit" className="btn btn-primary">
+                        Guardar Proveedor
+                    </button>
+                </form>
+            </div>
+        </div>
+     </>
   );
 }
