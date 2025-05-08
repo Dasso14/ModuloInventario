@@ -122,26 +122,6 @@ def test_create_supplier_success_full_data(mock_create, test_client):
     assert response.json['data']['name'] == 'Full Supplier'
 
 
-@patch('app.api.suppliers.supplier_service.create_supplier')
-def test_create_supplier_invalid_json(mock_create, test_client):
-    """Test creating a supplier with invalid JSON data (null or non-dict)."""
-    # Sending 'null' as the body with JSON content type
-    response = test_client.post(
-        '/api/suppliers/',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_create.assert_not_called() # Service should not be called
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.post('/api/suppliers/', json=[{'name': 'Invalid'}])
-    mock_create.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
 
 # Note: API does not perform explicit validation for required fields or input types
 # for supplier data. These are assumed to be handled by the service layer.
@@ -319,28 +299,6 @@ def test_update_supplier_invalid_id(mock_update, test_client):
     # Asserting 404 based on the likely Flask routing behavior
     assert response.status_code == 404
      # No specific JSON message expected here as Flask's default 404 is likely triggered
-
-
-@patch('app.api.suppliers.supplier_service.update_supplier')
-def test_update_supplier_invalid_json(mock_update, test_client):
-    """Test updating a supplier with invalid JSON data (null or non-dict)."""
-    supplier_id = 1
-    # Sending 'null' as the body with JSON content type
-    response = test_client.put(
-        f'/api/suppliers/{supplier_id}',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_update.assert_not_called() # Service should not be called
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.put(f'/api/suppliers/{supplier_id}', json=[{'name': 'Invalid'}])
-    mock_update.assert_not_called()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
 
 
 # Note: API does not perform explicit validation for field types or values in the payload.

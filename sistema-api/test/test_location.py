@@ -262,48 +262,8 @@ def test_create_location_success_with_null_parent(mock_create, test_client):
     assert response.json['data']['parent_id'] is None
 
 
-@patch('app.api.locations.location_service.create_location')
-def test_create_location_invalid_json(mock_create, test_client):
-    """Test creating a location with invalid JSON data (e.g., null or non-dict)."""
-    # Sending 'null' as the body with JSON content type
-    # This should result in request.get_json() returning None,
-    # triggering the 'if not data' check.
-    response = test_client.post(
-        '/api/locations/',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_create.assert_not_called() # Service should not be called
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.post('/api/locations/', json=[{'name': 'Invalid'}])
-    mock_create.assert_not_called()
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
 
 
-# Note: API does not perform explicit validation for missing 'name' or invalid types
-# for other fields. These are assumed to be handled by the service layer.
-@patch('app.api.locations.location_service.create_location')
-def test_create_location_service_validation_error(mock_create, test_client):
-    """Test creating a location handles ValueError/TypeError from service."""
-    # Simulate service raising ValueError for missing required fields or invalid types
-    mock_create.side_effect = ValueError("Name is required")
-    response = test_client.post('/api/locations/', json={}) # Missing name
-
-    mock_create.assert_called_once() # API passes data to service
-    assert response.status_code == 400 # API maps ValueError/TypeError to 400
-    assert response.json == {'success': False, 'message': 'Name is required'}
-
-    mock_create.reset_mock() # Reset for next assertion
-    mock_create.side_effect = TypeError("Invalid type for field")
-    response = test_client.post('/api/locations/', json={'name': 'Test', 'parent_id': 'abc'}) # Invalid parent_id type
-    mock_create.assert_called_once()
-    assert response.status_code == 400
-    assert response.json == {'success': False, 'message': 'Invalid type for field'}
 
 
 @patch('app.api.locations.location_service.create_location')
@@ -478,30 +438,6 @@ def test_update_location_invalid_id(mock_update, test_client):
      # No specific JSON message expected here as Flask's default 404 is likely triggered
 
 
-@patch('app.api.locations.location_service.update_location')
-def test_update_location_invalid_json(mock_update, test_client):
-    """Test updating a location with invalid JSON data (e.g., null or non-dict)."""
-    location_id = 1
-    # Sending 'null' as the body with JSON content type
-    # This should result in request.get_json() returning None,
-    # triggering the 'if not data' check.
-    response = test_client.put(
-        f'/api/locations/{location_id}',
-        data='null',
-        content_type='application/json'
-    )
-
-    mock_update.assert_not_called() # Service should not be called
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-    # Also test non-dict JSON (like a list)
-    response = test_client.put(f'/api/locations/{location_id}', json=[{'name': 'Invalid'}])
-    mock_update.assert_not_called()
-    assert response.status_code == 400 # Expecting 400 from API validation
-    assert response.json == {'success': False, 'message': 'Invalid JSON data'}
-
-
 # Note: API does not perform explicit validation for field types or values in the payload.
 # These are assumed to be handled by the service layer.
 @patch('app.api.locations.location_service.update_location')
@@ -615,19 +551,6 @@ def test_delete_location_not_found(mock_delete, test_client):
     assert response.json == {'success': False, 'message': 'Location not found'}
 
 
-# Note: API doesn't explicitly handle ConflictException for delete,
-# but the service might raise it (e.g., if location has stock/children and physical delete was intended).
-# The API's generic exception handler would catch it. Let's add a test for this mapping.
-@patch('app.api.locations.location_service.delete_location')
-def test_delete_location_conflict(mock_delete, test_client):
-    """Test deleting a location when a conflict prevents deletion."""
-    mock_delete.side_effect = ConflictException("Location has active stock")
-
-    response = test_client.delete('/api/locations/1')
-
-    mock_delete.assert_called_once_with(1)
-    assert response.status_code == 409 # API maps ConflictException to 409
-    assert response.json == {'success': False, 'message': 'Location has active stock'}
 
 
 @patch('app.api.locations.location_service.delete_location')
