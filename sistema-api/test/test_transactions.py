@@ -563,3 +563,37 @@ def test_get_stock_levels_unexpected_error(mock_get_stock_levels, test_client):
     mock_get_stock_levels.assert_called_once_with(filters={}, pagination={}, sorting={})
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
+
+@patch('app.api.transactions.transaction_service.get_all_transactions')
+def test_list_transactions_default_sorting(mock_get_all, test_client):
+    """Test that transactions are sorted by timestamp descending by default"""
+    mock_transactions = [
+        MockTransaction(id=1, timestamp=datetime(2023, 1, 1)), 
+        MockTransaction(id=2, timestamp=datetime(2023, 1, 2))
+    ]
+    mock_get_all.return_value = mock_transactions
+
+    response = test_client.get('/api/transactions/')
+    
+    # Verify default sorting is applied
+    mock_get_all.assert_called_once_with(
+        filters={},
+        pagination={},
+        sorting={'timestamp': 'desc'}  # Default sort
+    )
+    assert response.status_code == 200
+    # Verify results are in descending order
+    assert response.json['data'][0]['id'] == 2
+    assert response.json['data'][1]['id'] == 1
+
+
+@patch('app.api.transactions.transaction_service.get_all_transactions')
+def test_list_transactions_invalid_sort_field(mock_get_all, test_client):
+    """Test invalid sort field validation"""
+    mock_get_all.side_effect = ValueError("Invalid sort field")
+    
+    response = test_client.get('/api/transactions/?sortBy=invalid_field')
+    
+    assert response.status_code == 400
+    assert "Invalid sort field" in response.json['message']
+    mock_get_all.assert_called_once()
