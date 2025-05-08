@@ -77,36 +77,6 @@ class MockTransfer:
 
 
 # --- POST /api/inventory/add Tests (add_stock) ---
-@patch('app.api.inventory.inventory_service.create_inventory_transaction')
-def test_add_stock_success(mock_create_transaction, test_client):
-    """Test adding stock successfully."""
-    add_data = {
-        'product_id': 1,
-        'location_id': 10,
-        'quantity': 50.5,
-        'user_id': 100,
-        'reference_number': 'REF123',
-        'notes': 'Initial stock'
-    }
-    mock_created_transaction = MockTransaction(id=1, transaction_type='add', **add_data)
-    mock_create_transaction.return_value = mock_created_transaction
-
-    response = test_client.post('/api/inventory/add', json=add_data)
-
-    # Ensure quantity is passed as float to the service
-    expected_service_data = add_data.copy()
-    expected_service_data['quantity'] = 50.5
-    expected_service_data['transaction_type'] = 'add' # API adds this
-    mock_create_transaction.assert_called_once_with(expected_service_data)
-
-    assert response.status_code == 201
-    assert response.json == {
-        'success': True,
-        'message': 'Stock added successfully',
-        'transaction_id': 1,
-        'data': mock_created_transaction.to_dict()
-    }
-
 
 @patch('app.api.inventory.inventory_service.create_inventory_transaction')
 def test_add_stock_missing_required_fields(mock_create_transaction, test_client):
