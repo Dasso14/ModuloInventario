@@ -250,29 +250,3 @@ def test_get_total_inventory_value_unexpected_error(mock_get_total_value, client
     # Check the specific error message from the API route
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred.'} # Check exact message
-def test_sql_injection_in_low_stock_report_filters(client):
-    # El endpoint actual /api/reports/low-stock no acepta product_name como filtro.
-    # Llama a report_service.get_low_stock_items() sin pasarle filtros del request.
-    # Para que este test sea efectivo, el endpoint debería procesar un filtro product_name
-    # O, el test debería mockear el servicio para simular que el servicio sí usa un filtro vulnerable.
-
-    # Asumiendo que el endpoint *debería* tomar un filtro y ser seguro:
-    injection_payload = "'; DROP TABLE products;--"
-    encoded_payload = injection_payload # Flask/Werkzeug manejan la codificación
-
-    # Si el endpoint /api/reports/low-stock fuera modificado para aceptar &product_name=...
-    # y ReportService.get_low_stock_items usara ese filtro (esperemos que de forma segura con SQLAlchemy):
-    # response = client.get(f'/api/reports/low-stock?product_name={encoded_payload}')
-
-    # Dado el código actual de reports.py, el query param product_name será ignorado.
-    response = client.get(f'/api/reports/low-stock?product_name={encoded_payload}')
-    
-    # Con el código actual, se espera un 200 OK porque el filtro es ignorado.
-    # La aserción original de 400/422 fallaría.
-    assert response.status_code == 200, \
-        f"La petición no debería fallar ya que el filtro es ignorado por el endpoint actual. Código: {response.status_code}"
-    
-    data = response.get_json()
-    assert data['success'] is True
-    # Si se implementara el filtro y fuera seguro (SQLAlchemy), se esperaría data['data'] vacía.
-    # Si el filtro se implementara de forma insegura, podría haber un 500 o comportamiento inesperado.

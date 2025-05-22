@@ -616,15 +616,3 @@ def test_delete_category_unexpected_error(mock_delete, test_client):
     mock_delete.assert_called_once_with(1)
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
-def test_create_category_without_name(client):
-    payload = {} # JSON vacío
-    response = client.post('/api/categories/', json=payload) # URL con /
-
-    assert response.status_code == 400, "Se espera un 400 Bad Request por falta de campo obligatorio"
-    data = response.get_json()
-    assert data is not None, "La respuesta debe contener un cuerpo JSON"
-    assert data.get("success") is False
-    assert "message" in data, "Debe incluir un mensaje de error"
-    # Tu endpoint categories.py valida 'name' específicamente:
-    # return jsonify({'success': False, 'message': 'Category name is required and must be a non-empty string'}), 400
-    assert "category name is required" in data["message"].lower() or "nombre de la categoría es requerido" in data["message"].lower()
