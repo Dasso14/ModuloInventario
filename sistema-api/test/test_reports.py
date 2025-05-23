@@ -250,3 +250,23 @@ def test_get_total_inventory_value_unexpected_error(mock_get_total_value, client
     # Check the specific error message from the API route
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred.'} # Check exact message
+
+
+def test_sql_injection_in_report_filter(client):
+    """TC12: Test SQL injection attempt in report filter."""
+    malicious_payload = "'; DROP TABLE products;--"
+    # Probando en el filtro 'name' del reporte de stock-levels si existiera,
+    # o en cualquier otro filtro de texto que se pase a la API.
+    # El endpoint actual de stock-levels no toma `name` como filtro directo
+    # si no `product_id`, `location_id`, etc.
+    # Este test asume un filtro de nombre para el reporte.
+    # Si la implementación del reporte no tiene filtros de texto directos,
+    # el test debe adaptarse a los filtros existentes.
+    # Si los filtros existentes son solo IDs, la inyección es menos probable.
+    # Adaptado para un filtro hipotético 'productName'
+    response = client.get(f'/api/reports/stock-levels?productName={malicious_payload}')
+
+    # Después de implementar la validación de entrada en el API de reportes
+    assert response.status_code == 400 # O 422
+    assert response.json['success'] is False
+    assert "Invalid" in response.json['message'] # O mensaje más específico

@@ -336,3 +336,44 @@ def test_get_transfer_by_id_database_error(mock_get_transfer, test_client):
 
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'DB error'}
+
+
+# Primero, añade un mock para la función delete_transfer en TransferService
+@patch('app.api.transfers.transfer_service.delete_transfer')
+def test_delete_non_existent_transfer(mock_delete_transfer, test_client):
+    """TC20: Test deleting a non-existent transfer."""
+    # Simular que el servicio lanza NotFoundException
+    mock_delete_transfer.side_effect = NotFoundException("Transfer not found")
+    non_existent_id = 999999
+
+    response = test_client.delete(f'/api/transfers/{non_existent_id}')
+
+    mock_delete_transfer.assert_called_once_with(non_existent_id)
+    assert response.status_code == 404
+    # La aserción debe verificar el contenido JSON esperado
+    assert response.json == {'success': False, 'message': 'Transfer not found'}
+    assert response.headers['Content-Type'] == 'application/json'
+
+
+# Primero, añade un mock para la función update_transfer en TransferService
+@patch('app.api.transfers.transfer_service.update_transfer')
+def test_update_non_existent_transfer(mock_update_transfer, test_client):
+    """TC21: Test updating a non-existent transfer."""
+    # Simular que el servicio lanza NotFoundException
+    mock_update_transfer.side_effect = NotFoundException("Transfer not found")
+    non_existent_id = 999999
+    update_data = {
+        "product_id": 1,
+        "from_location_id": 1,
+        "to_location_id": 2,
+        "quantity": 5.0,
+        "user_id": 1
+    }
+
+    response = test_client.put(f'/api/transfers/{non_existent_id}', json=update_data)
+
+    mock_update_transfer.assert_called_once_with(non_existent_id, update_data)
+    assert response.status_code == 404
+    # La aserción debe verificar el contenido JSON esperado
+    assert response.json == {'success': False, 'message': 'Transfer not found'}
+    assert response.headers['Content-Type'] == 'application/json'

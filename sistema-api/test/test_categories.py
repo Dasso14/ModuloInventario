@@ -616,3 +616,39 @@ def test_delete_category_unexpected_error(mock_delete, test_client):
     mock_delete.assert_called_once_with(1)
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
+
+
+@patch('app.api.categories.category_service.create_category')
+def test_create_category_missing_name_field(mock_create_category, test_client):
+    """TC13: Test creating a category without the 'name' field."""
+    # JSON vacío
+    response = test_client.post(
+        '/api/categories/',
+        json={}
+    )
+    mock_create_category.assert_not_called()
+    assert response.status_code == 400
+    # Este es el mensaje esperado si la validación del API se alcanza.
+    assert response.json == {'success': False, 'message': 'Category name is required and must be a non-empty string'}
+
+@patch('app.api.categories.category_service.create_category')
+def test_create_category_empty_name_field(mock_create_category, test_client):
+    """TC13: Test creating a category with an empty 'name' field."""
+    response = test_client.post(
+        '/api/categories/',
+        json={'name': '', 'description': 'Test category'}
+    )
+    mock_create_category.assert_not_called()
+    assert response.status_code == 400
+    assert response.json == {'success': False, 'message': 'Category name is required and must be a non-empty string'}
+
+@patch('app.api.categories.category_service.create_category')
+def test_create_category_whitespace_name_field(mock_create_category, test_client):
+    """TC13: Test creating a category with a whitespace-only 'name' field."""
+    response = test_client.post(
+        '/api/categories/',
+        json={'name': '   ', 'description': 'Test category'}
+    )
+    mock_create_category.assert_not_called()
+    assert response.status_code == 400
+    assert response.json == {'success': False, 'message': 'Category name is required and must be a non-empty string'}

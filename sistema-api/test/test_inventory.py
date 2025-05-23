@@ -1,5 +1,7 @@
 import pytest
 import json
+import threading
+import time
 from unittest.mock import MagicMock, patch
 
 from flask import Flask
@@ -74,6 +76,13 @@ class MockTransfer:
             'notes': self.notes,
             # 'timestamp': self.timestamp.isoformat() if hasattr(self, 'timestamp') else None
         }
+    
+class MockStockLevelForConcurrency:
+    def __init__(self, product_id, location_id, quantity):
+        self.product_id = product_id
+        self.location_id = location_id
+        self.quantity = quantity
+        self.lock = threading.Lock()
 
 
 # --- POST /api/inventory/add Tests (add_stock) ---
@@ -599,3 +608,222 @@ def test_transfer_stock_unexpected_error(mock_create_transfer, test_client):
     mock_create_transfer.assert_called_once()
     assert response.status_code == 500
     assert response.json == {'success': False, 'message': 'An internal error occurred'}
+
+
+@patch('app.api.inventory.inventory_service.create_location_transfer')
+def test_transfer_stock_quantity_greater_than_available(mock_create_transfer, test_client):
+    """TC03: Test transferring stock with quantity greater than available stock."""
+    # Simular que la excepción InsufficientStockException es lanzada por el servicio
+    mock_create_transfer.side_effect = InsufficientStockException("Insufficient stock at source location.")
+
+    transfer_data = {
+        "product_id": 1,
+        "from_location_id": 1,
+        "to_location_id": 2,
+        "quantity": 1000.0, # Cantidad muy grande para simular stock insuficiente
+        "user_id": 1
+    }
+    response = test_client.post(
+        '/api/inventory/transfer',
+        json=transfer_data
+    )
+
+    mock_create_transfer.assert_called_once()
+    assert response.status_code == 409 # Esperamos 409 Conflict por stock insuficiente
+    assert response.json == {'success': False, 'message': 'Insufficient stock at source location.'}
+
+@patch('app.api.inventory.inventory_service.db.session')
+@patch('app.api.inventory.inventory_service.create_inventory_transaction')
+def test_atomic_transfer_rollback_on_destination_failure(mock_create_transaction_for_atomic, mock_db_session, test_client):
+    """TC04: Test atomic transfer: rollback on destination update failure."""
+    # Mockear las llamadas a create_inventory_transaction para simular el comportamiento deseado.
+    # La primera llamada (salida) debería ser exitosa.
+    mock_transaction_out = MagicMock(id=10, to_dict=lambda: {'id': 10, 'type': 'salida'})
+    # La segunda llamada (entrada) debería ser exitosa, pero simular que el COMMIT posterior falla.
+    mock_transaction_in = MagicMock(id=11, to_dict=lambda: {'id': 11, 'type': 'entrada'})
+
+    # Configuramos el mock de create_inventory_transaction para las dos llamadas secuenciales
+    mock_create_transaction_for_atomic.side_effect = [
+        mock_transaction_out, # Primera llamada para la salida
+        mock_transaction_in   # Segunda llamada para la entrada
+    ]
+
+    # Simular que el commit final (después de crear ambas transacciones y la transferencia) falla
+    mock_db_session.commit.side_effect = Exception("Forced database commit failure on destination update")
+
+    transfer_data = {
+        "product_id": 1,
+        "from_location_id": 1,
+        "to_location_id": 2,
+        "quantity": 5.0,
+        "user_id": 1,
+        "notes": "Test atomic rollback"
+    }
+
+    response = test_client.post(
+        '/api/inventory/transfer',
+        json=transfer_data
+    )
+
+    # Verificamos que se intentó hacer el commit y luego el rollback
+    mock_db_session.commit.assert_called_once()
+    mock_db_session.rollback.assert_called_once() # Debería haber un rollback
+
+    # Assert the response indicates an internal server error
+    assert response.status_code == 500
+    assert response.json == {'success': False, 'message': 'Database error occurred during stock transfer'}
+
+    # Opcional: Puedes añadir aserciones para verificar que se intentó crear ambas transacciones
+    assert mock_create_transaction_for_atomic.call_count == 2
+
+
+@patch('app.api.inventory.inventory_service.create_inventory_transaction')
+def test_remove_stock_results_in_negative_stock(mock_create_transaction, test_client):
+    """TC06: Test removing stock that would result in negative stock."""
+    # Simular que la excepción InsufficientStockException es lanzada por el servicio
+    mock_create_transaction.side_effect = InsufficientStockException("Insufficient stock for removal")
+
+    remove_data = {
+        "product_id": 1,
+        "location_id": 1,
+        "quantity": 1000.0, # Cantidad a remover que excedería el stock
+        "user_id": 1,
+        "transaction_type": "salida" # Tipo de transacción
+    }
+    response = test_client.post(
+        '/api/inventory/remove',
+        json=remove_data
+    )
+
+    mock_create_transaction.assert_called_once()
+    assert response.status_code == 409 # Esperamos 409 Conflict
+    assert response.json == {'success': False, 'message': 'Insufficient stock for removal'}
+
+@patch('app.api.inventory.inventory_service.create_inventory_transaction')
+def test_adjust_stock_results_in_negative_stock(mock_create_transaction, test_client):
+    """TC06: Test adjusting stock with negative quantity that would result in negative stock."""
+    # Simular que la excepción InsufficientStockException es lanzada por el servicio
+    mock_create_transaction.side_effect = InsufficientStockException("Adjustment would result in negative stock")
+
+    adjust_data = {
+        "product_id": 1,
+        "location_id": 1,
+        "quantity": -1000.0, # Ajuste negativo que excedería el stock
+        "user_id": 1,
+        "notes": "Ajuste por pérdida grande",
+        "transaction_type": "ajuste" # Tipo de transacción
+    }
+    response = test_client.post(
+        '/api/inventory/adjust',
+        json=adjust_data
+    )
+
+    mock_create_transaction.assert_called_once()
+    assert response.status_code == 409 # Esperamos 409 Conflict
+    assert response.json == {'success': False, 'message': 'Adjustment would result in negative stock'}
+
+mock_current_stock = MockStockLevelForConcurrency(product_id=1, location_id=1, quantity=100)
+
+@patch('app.api.inventory.inventory_service.create_location_transfer')
+def test_concurrent_transfers(mock_create_transfer, test_client):
+    """TC09: Test multiple simultaneous transfers for consistency."""
+    # Configurar el mock para que simule éxito en la creación de transferencia
+    mock_create_transfer.return_value = MagicMock(id=1, to_dict=lambda: {'id': 1, 'product_id': 1, 'from_location_id': 1, 'to_location_id': 2, 'quantity': 5.0, 'user_id': 1})
+
+    num_transfers = 5
+    quantity_per_transfer = 5.0
+    initial_stock = 100.0
+    final_stock_expected = initial_stock - (num_transfers * quantity_per_transfer)
+
+    # Mock del método de obtención de stock para que siempre devuelva el stock inicial simulado
+    # Importante: para concurrencia, esto debería ser un mock que se actualice o un DB de test
+    # Aquí es un mock simplificado que no simula el cambio de stock intermedio.
+    # Un test de concurrencia *real* no mockearía el servicio de esta manera, sino que interactuaría con la DB.
+    with patch('app.services.transaction_service.TransactionService._get_current_stock', return_value=initial_stock):
+        transfer_data = {
+            "product_id": 1,
+            "from_location_id": 1,
+            "to_location_id": 2,
+            "quantity": quantity_per_transfer,
+            "user_id": 1,
+            "notes": "Concurrent transfer"
+        }
+
+        # Lista para guardar los hilos
+        threads = []
+        results = []
+        results_lock = threading.Lock()
+
+        def send_request(data_payload):
+            response = test_client.post('/api/inventory/transfer', json=data_payload)
+            with results_lock:
+                results.append(response)
+
+        # Crear y lanzar hilos
+        for _ in range(num_transfers):
+            thread = threading.Thread(target=send_request, args=(transfer_data,))
+            threads.append(thread)
+            thread.start()
+
+        # Esperar a que todos los hilos terminen
+        for thread in threads:
+            thread.join()
+
+        # Validar resultados
+        success_count = 0
+        for res in results:
+            assert res.status_code == 201 # O el código que el API retorne en éxito
+            assert res.json['success'] is True
+            success_count += 1
+
+        assert success_count == num_transfers
+        # En un test real de integración, aquí se consultaría el stock final de la DB
+        # y se compararía con final_stock_expected.
+        # Por ahora, dado el mock del servicio, solo podemos confirmar que todas las llamadas al servicio fueron exitosas.
+        assert mock_create_transfer.call_count == num_transfers
+
+
+@patch('app.api.inventory.inventory_service.create_location_transfer')
+def test_transfer_stock_same_source_and_destination(mock_create_transfer, test_client):
+    """TC19: Test creating a transfer with the same source and destination locations."""
+    # Simular que el servicio lanza una excepción por ubicaciones iguales
+    mock_create_transfer.side_effect = ValueError("Source and destination locations cannot be the same")
+
+    transfer_data = {
+        "product_id": 1,
+        "from_location_id": 1,
+        "to_location_id": 1, # Mismo origen y destino
+        "quantity": 5.0,
+        "user_id": 1
+    }
+    response = test_client.post(
+        '/api/inventory/transfer',
+        json=transfer_data
+    )
+
+    mock_create_transfer.assert_called_once()
+    assert response.status_code == 400
+    assert response.json == {'success': False, 'message': 'Source and destination locations cannot be the same'}
+
+
+@patch('app.api.inventory.inventory_service.create_location_transfer')
+def test_transfer_stock_negative_quantity(mock_create_transfer, test_client):
+    """TC22: Test creating a transfer with a negative quantity."""
+    # Simular que el servicio lanza una excepción por cantidad negativa
+    mock_create_transfer.side_effect = ValueError("Transfer quantity must be positive.")
+
+    transfer_data = {
+        "product_id": 1,
+        "from_location_id": 1,
+        "to_location_id": 2,
+        "quantity": -5.0, # Cantidad negativa
+        "user_id": 1
+    }
+    response = test_client.post(
+        '/api/inventory/transfer',
+        json=transfer_data
+    )
+
+    mock_create_transfer.assert_called_once()
+    assert response.status_code == 400
+    assert response.json == {'success': False, 'message': 'Transfer quantity must be positive.'}
