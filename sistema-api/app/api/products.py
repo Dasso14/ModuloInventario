@@ -85,9 +85,21 @@ def create_product():
     Expected JSON body: {"sku": "...", "name": "...", ...}
     """
     data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+    if data is None: # Changed from 'if not data:'
+        return jsonify({'success': False, 'message': 'Invalid JSON data or incorrect Content-Type'}), 400
 
+    # Add your specific field validation here as suggested before
+    required_fields = ['sku', 'name']
+    missing_or_empty = [f for f in required_fields if f not in data or not data[f] or not str(data[f]).strip()]
+    if missing_or_empty:
+        return jsonify({'success': False, 'message': f'Missing or empty required fields: {", ".join(missing_or_empty)}'}), 400
+
+    if not isinstance(data['name'], str) or not data['name'].strip():
+        return jsonify({'success': False, 'message': 'Product name is required and must be a non-empty string'}), 400
+
+    if not isinstance(data['sku'], str) or not data['sku'].strip():
+        return jsonify({'success': False, 'message': 'Product SKU is required and must be a non-empty string'}), 400
+    # --- END ADDED VALIDATION ---
     try:
         new_product = product_service.create_product(data)
         return jsonify({

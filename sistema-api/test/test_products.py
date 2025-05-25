@@ -1,6 +1,7 @@
 import pytest
 import json
 from unittest.mock import MagicMock, patch
+from app import create_app, db
 from flask import Flask
 from app.api.products import products_bp, product_service
 from app.utils.exceptions import NotFoundException, ConflictException, DatabaseException
@@ -16,6 +17,25 @@ from app.utils.exceptions import NotFoundException, ConflictException, DatabaseE
 
 # --- Fixtures ---
 @pytest.fixture
+def app(): # Renamed from test_client to app, as it creates the app
+    """Fixture for Flask application configured for testing."""
+    # Use your application factory
+    # Ensure your config.py has a 'TestingConfig'
+    app_instance = create_app(config_object='config.TestingConfig')
+
+    # Establish an application context before running the tests.
+    with app_instance.app_context():
+        # You might need to create database tables if your tests interact with the DB
+        # db.create_all() # Uncomment if your tests require a real DB schema
+        pass
+
+    yield app_instance
+
+    # Clean up resources, like dropping DB tables if created
+    # with app_instance.app_context():
+    #     db.drop_all() # Uncomment if you created tables
+    
+@pytest.fixture
 def test_client():
     """Fixture for Flask test client."""
     app = Flask(__name__)
@@ -27,16 +47,20 @@ def test_client():
 # --- Mock Objects ---
 class MockProduct:
     """Helper mock class to simulate a Product model object."""
-    def __init__(self, id, sku, name, category_id=None, supplier_id=None, is_active=True):
+    def __init__(self, id, sku, name, category_id=None, supplier_id=None, is_active=True, **kwargs): # Add **kwargs
         self.id = id
         self.sku = sku
         self.name = name
         self.category_id = category_id
         self.supplier_id = supplier_id
         self.is_active = is_active
+        # Store other arguments passed via kwargs
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def to_dict(self):
-        return {
+        # Make sure to_dict can handle these new attributes if needed for assertions
+        data = {
             'id': self.id,
             'sku': self.sku,
             'name': self.name,
@@ -44,6 +68,12 @@ class MockProduct:
             'supplier_id': self.supplier_id,
             'is_active': self.is_active
         }
+        # Add other attributes from kwargs if they should be in the dict
+        # This part depends on what your actual Product.to_dict() returns
+        for key in ['description', 'unit_price', 'unit_cost', 'min_stock']: # Example attributes
+            if hasattr(self, key):
+                data[key] = getattr(self, key)
+        return data
 
 # --- GET /api/products Tests (list_products) ---
 @patch('app.api.products.product_service.get_all_products')
@@ -580,7 +610,8 @@ def test_create_product_duplicate_sku(mock_create, test_client):
     )
 
     # Verificamos la respuesta del segundo intento
-    mock_create.assert_called_once() # Se llama una vez para el segundo intento (el primero es mockeado)
+    # mock_create.assert_called_once() # Se llama una vez para el segundo intento (el primero es mockeado)
+    assert mock_create.call_count == 2 # Correct assertion
     assert response_second.status_code == 409 # Esperamos 409 Conflict
     assert response_second.json == {'success': False, 'message': 'Product with this SKU already exists'}
 

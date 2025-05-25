@@ -9,6 +9,8 @@ from datetime import datetime, date, timezone # Import timezone for consistent c
 transfer_service = TransferService()
 
 # --- Helper Functions ---
+
+
 def validate_int_param(param_value, param_name):
     """Helper to validate and convert query parameter to integer."""
     if param_value is None:
@@ -32,6 +34,32 @@ def validate_date_param(param_value, param_name):
         raise ValueError(f"Invalid {param_name} format")
 
 # --- API Routes ---
+
+@transfers_bp.route('/<int:transfer_id>', methods=['PUT', 'PATCH'])
+def update_single_transfer(transfer_id): # Changed name to avoid conflict
+    # data = request.get_json()
+    # if data is None: return jsonify({'success': False, 'message': 'Invalid JSON'}), 400
+    # try:
+    #     updated = transfer_service.update_transfer(transfer_id, data)
+    #     return jsonify({'success': True, 'data': updated.to_dict()})
+    # except NotFoundException as e: return jsonify({'success': False, 'message': str(e)}), 404
+    # ...
+    return jsonify({'success': False, 'message': 'Not implemented'}), 501
+
+
+
+@transfers_bp.route('/<int:transfer_id>', methods=['PUT', 'PATCH'])
+def update_transfer_route(transfer_id):
+    # data = request.get_json()
+    # ... logic ...
+    # updated_transfer = transfer_service.update_transfer(transfer_id, data)
+    return jsonify({'success': False, 'message': 'Not implemented'}), 501
+
+@transfers_bp.route('/<int:transfer_id>', methods=['DELETE'])
+def delete_transfer_route(transfer_id):
+    # ... logic ...
+    # success = transfer_service.delete_transfer(transfer_id)
+    return jsonify({'success': False, 'message': 'Not implemented'}), 501
 
 @transfers_bp.route('/', methods=['POST'])
 def create_transfer():

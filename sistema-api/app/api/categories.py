@@ -45,8 +45,9 @@ def list_categories():
 def create_category():
     """POST /api/categories - Creates a new category."""
     data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+    # Check if get_json() returned None (which means parsing failed or wrong content type)
+    if data is None: # <--- MODIFIED LINE
+        return jsonify({'success': False, 'message': 'Invalid JSON data or incorrect Content-Type'}), 400
 
     # Validación adicional
     if 'name' not in data or not isinstance(data['name'], str) or not data['name'].strip():

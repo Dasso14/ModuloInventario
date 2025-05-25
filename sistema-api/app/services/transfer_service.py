@@ -215,8 +215,21 @@ class TransferService(BaseService):
             # Log the error
             print(f"An unexpected error occurred during transfer creation: {e}")
             raise DatabaseException("An unexpected error occurred during transfer creation.")
+    
+    def update_transfer(self, transfer_id, data):
+        # raise NotImplementedError("Update transfer not implemented")
+        # Or actual logic
+        transfer = self._get_by_id(self.model, transfer_id) # Assuming self.model is LocationTransfer
+        # ... update logic ...
+        # db.session.commit()
+        # return transfer
+        pass # Placeholder
 
-
-    # Update/Delete methods for transfers might be restricted.
-    # def update_transfer(self, transfer_id, data): ...
-    # def delete_transfer(self, transfer_id): ...
+    def delete_transfer(self, transfer_id):
+        # raise NotImplementedError("Delete transfer not implemented")
+        # Or actual logic
+        # transfer = self._get_by_id(self.model, transfer_id)
+        # db.session.delete(transfer)
+        # db.session.commit()
+        # return True
+        pass # Placeholder

@@ -15,7 +15,7 @@ class Config:
     CORS_AUTOMATIC_OPTIONS = True     # que Flask‑CORS gestione automáticamente las OPTIONS preflight :contentReference[oaicite:4]{index=4}
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess' # Change this!
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://user:password@host:port/dbname' # Fallback DB URI (replace!)
+        'postgresql://postgres:root@localhost:5432/inventario_db' # Fallback DB URI (replace!)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Add other general configurations
 
@@ -24,9 +24,14 @@ class DevelopmentConfig(Config):
     # Override development-specific settings if needed
 
 class TestingConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://test_user:test_password@test_host:test_port/test_dbname' # Test DB URI
-    # Override testing-specific settings
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'sqlite:///:memory:'
+    # For PostgreSQL, ensure 'TEST_DATABASE_URL' is set or provide a valid direct string:
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://user:pass@host:port/test_db_name'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'test-secret-key' # Ensure this is set too
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WTF_CSRF_ENABLED = False # Often disabled for API tests
+    # Add any other necessary test-specific configurations
+    MAX_CONTENT_LENGTH = 1 * 1024 * 1024
 
 class ProductionConfig(Config):
     DEBUG = False
