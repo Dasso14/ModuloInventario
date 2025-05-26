@@ -272,8 +272,7 @@ def transfer_stock():
     """POST /api/inventory/transfer - Registers a stock transfer."""
     data = request.get_json(silent=True) # Use silent=True for robust error handling
     if data is None: # Explicitly check if data is None
-        return jsonify({'success': False, 'message': 'Invalid JSON data or incorrect Content-Type'}), 400
-
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400 
      
     if not data:
         return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400

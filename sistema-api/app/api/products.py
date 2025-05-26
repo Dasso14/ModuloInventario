@@ -1,6 +1,6 @@
 # inventory_api/app/api/products.py
 
-from flask import request, jsonify
+from flask import request, jsonify, redirect
 from . import products_bp
 from ..services import ProductService
 from ..utils.exceptions import NotFoundException, ConflictException, DatabaseException, InsufficientStockException # Added InsufficientStockException back as it was missing
