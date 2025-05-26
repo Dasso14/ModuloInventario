@@ -5,6 +5,7 @@ from . import products_bp
 from ..services import ProductService
 from ..utils.exceptions import NotFoundException, ConflictException, DatabaseException, InsufficientStockException # Added InsufficientStockException back as it was missing
 from datetime import datetime
+from werkzeug.exceptions import BadRequest
 
 # Instantiate the service
 product_service = ProductService()
@@ -17,6 +18,7 @@ def list_products():
     """
     try:
         # Parse query parameters for filtering, pagination, sorting
+        validate_query_params(request.args)
         filters = {}
         if 'sku' in request.args:
             filters['sku'] = request.args.get('sku')
@@ -69,6 +71,8 @@ def list_products():
         # return jsonify({'success': True, 'data': products_data, 'pagination': {...}}), 200
         return jsonify({'success': True, 'data': products_data}), 200
 
+    except BadRequest as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
     except DatabaseException as e:
          return jsonify({'success': False, 'message': str(e)}), 500
     except Exception as e:
@@ -76,6 +80,39 @@ def list_products():
         print(f"An unexpected error occurred: {e}")
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
+@products_bp.after_request
+def add_security_headers(response):
+    headers = {
+        'Content-Security-Policy': "default-src 'self'",
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+    }
+    for header, value in headers.items():
+        response.headers[header] = value
+    return response
+
+@products_bp.before_request
+def force_https():
+    if request.headers.get('X-Forwarded-Proto') == 'http':
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
+    
+@products_bp.errorhandler(413)
+def handle_payload_too_large(e):
+    return jsonify({
+        'success': False,
+        'message': 'Payload too large. Maximum size is 100KB'
+    }), 413
+
+@products_bp.errorhandler(404)
+def handle_not_found(e):
+    return jsonify({
+        'success': False,
+        'message': str(e) if str(e) else 'Resource not found'
+    }), 404
 
 @products_bp.route('/', methods=['POST','OPTIONS'])
 def create_product():
@@ -85,11 +122,20 @@ def create_product():
     Expected JSON body: {"sku": "...", "name": "...", ...}
     """
     data = request.get_json()
-    if data is None: # Changed from 'if not data:'
-        return jsonify({'success': False, 'message': 'Invalid JSON data or incorrect Content-Type'}), 400
+    if data is None:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+    
+    if not data:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
 
     # Add your specific field validation here as suggested before
     required_fields = ['sku', 'name']
+    empty_fields = [field for field in required_fields if field in data and not str(data[field]).strip()]
+    if empty_fields:
+        return jsonify({
+            'success': False,
+            'message': f'Empty required fields: {", ".join(empty_fields)}'
+        }), 400
     missing_or_empty = [f for f in required_fields if f not in data or not data[f] or not str(data[f]).strip()]
     if missing_or_empty:
         return jsonify({'success': False, 'message': f'Missing or empty required fields: {", ".join(missing_or_empty)}'}), 400
@@ -204,6 +250,20 @@ def delete_product(product_id):
         return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 # --- NEW ENDPOINT FOR STOCK LEVELS BY PRODUCT ---
+def validate_input_string(input_str):
+    """Valida que la cadena no contenga caracteres peligrosos para SQL."""
+    if not input_str:
+        return True
+    forbidden = ["'", ";", "--", "/*", "*/", "xp_", "UNION", "SELECT"]
+    input_upper = input_str.upper()
+    return not any(char in input_upper for char in forbidden)
+
+def validate_query_params(args):
+    """Valida todos los parámetros de consulta."""
+    for param, value in args.items():
+        if param in ['name', 'sku', 'description'] and not validate_input_string(value):
+            raise BadRequest(f"Invalid characters in {param} parameter")
+
 @products_bp.route('/<int:product_id>/stock-levels', methods=['GET','OPTIONS'])
 def list_product_stock_levels(product_id):
     """GET /api/products/{product_id}/stock-levels - Lists stock levels for a specific product."""
