@@ -136,14 +136,16 @@ def create_product():
             'success': False,
             'message': f'Empty required fields: {", ".join(empty_fields)}'
         }), 400
-    missing_or_empty = [f for f in required_fields if f not in data or not data[f] or not str(data[f]).strip()]
-    if missing_or_empty:
+    missing_or_empty = [f for f in required_fields if f not in data or not data.get(f) or not str(data.get(f)).strip()]
+    if 'name' in missing_or_empty:
+        return jsonify({'success': False, 'message': 'Category name is required and must be a non-empty string'}), 400
+    elif missing_or_empty: # Para otros campos requeridos faltantes
         return jsonify({'success': False, 'message': f'Missing or empty required fields: {", ".join(missing_or_empty)}'}), 400
-
-    if not isinstance(data['name'], str) or not data['name'].strip():
+    
+    if 'name' in data and (not isinstance(data['name'], str) or not data['name'].strip()):
         return jsonify({'success': False, 'message': 'Product name is required and must be a non-empty string'}), 400
 
-    if not isinstance(data['sku'], str) or not data['sku'].strip():
+    if 'sku' in data and (not isinstance(data['sku'], str) or not data['sku'].strip()):
         return jsonify({'success': False, 'message': 'Product SKU is required and must be a non-empty string'}), 400
     # --- END ADDED VALIDATION ---
     try:
