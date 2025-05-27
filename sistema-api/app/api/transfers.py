@@ -35,31 +35,53 @@ def validate_date_param(param_value, param_name):
 
 # --- API Routes ---
 
+# En app/api/transfers.py
+# Consolida a una ruta de actualización, ej. update_transfer_route
 @transfers_bp.route('/<int:transfer_id>', methods=['PUT', 'PATCH'])
-def update_single_transfer(transfer_id): # Changed name to avoid conflict
-    # data = request.get_json()
-    # if data is None: return jsonify({'success': False, 'message': 'Invalid JSON'}), 400
-    # try:
-    #     updated = transfer_service.update_transfer(transfer_id, data)
-    #     return jsonify({'success': True, 'data': updated.to_dict()})
-    # except NotFoundException as e: return jsonify({'success': False, 'message': str(e)}), 404
-    # ...
-    return jsonify({'success': False, 'message': 'Not implemented'}), 501
+def update_transfer_route(transfer_id): # Asegúrate que el test mockea esta función si cambiaste el nombre
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+    try:
+        updated_transfer = transfer_service.update_transfer(transfer_id, data)
+        return jsonify({
+            'success': True,
+            'message': f'Transfer {transfer_id} updated successfully',
+            'data': updated_transfer.to_dict()
+        }), 200
+    except NotFoundException as e:
+        return jsonify({'success': False, 'message': str(e)}), 404
+    # Añade otros manejadores de excepciones relevantes (ValueError, ConflictException, DatabaseException)
+    except (ValueError, TypeError) as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+    except ConflictException as e:
+        return jsonify({'success': False, 'message': str(e)}), 409
+    except DatabaseException as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 
-
-@transfers_bp.route('/<int:transfer_id>', methods=['PUT', 'PATCH'])
-def update_transfer_route(transfer_id):
-    # data = request.get_json()
-    # ... logic ...
-    # updated_transfer = transfer_service.update_transfer(transfer_id, data)
-    return jsonify({'success': False, 'message': 'Not implemented'}), 501
-
+# En app/api/transfers.py
 @transfers_bp.route('/<int:transfer_id>', methods=['DELETE'])
-def delete_transfer_route(transfer_id):
-    # ... logic ...
-    # success = transfer_service.delete_transfer(transfer_id)
-    return jsonify({'success': False, 'message': 'Not implemented'}), 501
+def delete_transfer_route(transfer_id): # Asegúrate que el test mockea esta función si cambiaste el nombre
+    try:
+        success = transfer_service.delete_transfer(transfer_id)
+        if success: # Asumiendo que el servicio devuelve True/False o lanza excepciones
+            return jsonify({'success': True, 'message': f'Transfer {transfer_id} deleted successfully'}), 200
+        else:
+            # Esto podría no alcanzarse si el servicio lanza excepciones en caso de fallo
+            return jsonify({'success': False, 'message': f'Could not delete Transfer {transfer_id}'}), 500
+    except NotFoundException as e:
+        return jsonify({'success': False, 'message': str(e)}), 404
+    except ConflictException as e: # Si la eliminación está bloqueada
+        return jsonify({'success': False, 'message': str(e)}), 409
+    except DatabaseException as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred'}), 500
 
 @transfers_bp.route('/', methods=['POST'])
 def create_transfer():
